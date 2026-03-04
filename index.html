@@ -3,12 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProCoach V2106 - Final System</title>
+    <title>ProCoach V2106 - Cloud Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
+      // Configuração do Firebase do Professor
+      const firebaseConfig = {
+        apiKey: "AIzaSyDoS1YJM7etljp__bFp8on52E3qsSUob4Y",
+        authDomain: "dossiercoach.firebaseapp.com",
+        projectId: "dossiercoach",
+        storageBucket: "dossiercoach.firebasestorage.app",
+        messagingSenderId: "876303911614",
+        appId: "1:876303911614:web:be19c809e8a7e42313ecef"
+      };
+      
+      // Inicializar Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const auth = firebase.auth();
+      
+      // Habilitar suporte OFFLINE
+      db.enablePersistence().catch(function(err) {
+          console.warn("Erro no modo offline:", err);
+      });
+    </script>
 
     <style>
         body { overscroll-behavior-y: contain; touch-action: none; background-color: #f1f5f9; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -43,8 +69,7 @@
     
     <div id="loading">
         <div class="text-3xl font-black italic">PROCOACH V2106</div>
-        <div class="text-sm opacity-70">Carregando Sistema...</div>
-        <button onclick="localStorage.clear(); location.reload()" style="margin-top:20px; color: #ef4444; background: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer;">SE TRAVAR, CLIQUE AQUI</button>
+        <div class="text-sm opacity-70">Conectando aos Servidores...</div>
     </div>
 
     <div id="root" class="h-full w-full"></div>
@@ -52,17 +77,47 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- HOOK DE DADOS BLINDADO ---
-        const useSafeStorage = (key, initialValue) => {
+        // --- NOVO HOOK DE DADOS: LOCAL + CLOUD (FIREBASE) ---
+        const useFirebaseStorage = (key, initialValue) => {
             const [storedValue, setStoredValue] = useState(() => {
                 try {
                     const item = window.localStorage.getItem(key);
                     return item ? JSON.parse(item) : initialValue;
                 } catch (error) { return initialValue; }
             });
+
+            // Buscar dados da nuvem 1 vez ao iniciar
             useEffect(() => {
-                try { window.localStorage.setItem(key, JSON.stringify(storedValue)); } catch (error) {}
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    db.collection('users').doc(user.uid).collection('data').doc(key)
+                      .get().then(doc => {
+                          if (doc.exists) {
+                              try {
+                                  const parsed = JSON.parse(doc.data().value);
+                                  setStoredValue(parsed);
+                                  window.localStorage.setItem(key, doc.data().value);
+                              } catch(e) { console.error("Erro no JSON da nuvem", e); }
+                          }
+                      }).catch(err => console.log("Erro ao buscar da nuvem (Pode estar offline):", err));
+                }
+            }, [key]);
+
+            // Salvar no LocalStorage e Firebase quando o dado mudar
+            useEffect(() => {
+                const strVal = JSON.stringify(storedValue);
+                window.localStorage.setItem(key, strVal);
+                
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    db.collection('users').doc(user.uid).collection('data').doc(key)
+                      .set({ 
+                          value: strVal, 
+                          updated_at: firebase.firestore.FieldValue.serverTimestamp() 
+                      }, { merge: true }).catch(err => console.log("Salvo no cache local. Será sincronizado depois.", err));
+                }
             }, [key, storedValue]);
+
             return [storedValue, setStoredValue];
         };
 
@@ -151,24 +206,28 @@
 
             return (
                 <div className={`w-full text-center text-[10px] font-bold text-white py-1 z-50 transition-colors shadow-md no-print ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}>
-                    {isOnline ? 'SISTEMA ONLINE (CONECTADO)' : 'SISTEMA OFFLINE - MODO LOCAL (DADOS SALVOS NO APARELHO)'}
+                    {isOnline ? 'SISTEMA ONLINE (CONECTADO E SINCRONIZANDO)' : 'SISTEMA OFFLINE - MODO LOCAL (DADOS SALVOS NO APARELHO)'}
                 </div>
             );
         };
 
-        // --- TELA DE LOGIN ---
-        const LoginScreen = ({ onLogin, themeColor }) => {
-            const [user, setUser] = useState('');
+        // --- TELA DE LOGIN (COM FIREBASE) ---
+        const LoginScreen = ({ themeColor }) => {
+            const [email, setEmail] = useState('');
             const [pass, setPass] = useState('');
             const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
 
-            const handleLogin = (e) => {
+            const handleLogin = async (e) => {
                 e.preventDefault();
-                // Simulação simples de login. (Depois substituímos pelo Firebase real)
-                if(user === 'coach' && pass === '1234') {
-                    onLogin();
-                } else {
-                    setError('Usuário ou senha incorretos. (Use: coach / 1234)');
+                setLoading(true);
+                setError('');
+                try {
+                    await firebase.auth().signInWithEmailAndPassword(email, pass);
+                    // O listener no App principal vai detectar o login e sumir com esta tela
+                } catch (err) {
+                    setError('Erro ao entrar. Verifique seu e-mail e senha.');
+                    setLoading(false);
                 }
             }
 
@@ -188,15 +247,15 @@
                         
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Usuário</label>
-                                <input type="text" className="w-full border-b-2 border-slate-200 p-2 font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors bg-transparent" value={user} onChange={e=>setUser(e.target.value)} placeholder="Digite seu usuário..." />
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">E-mail</label>
+                                <input type="email" required className="w-full border-b-2 border-slate-200 p-2 font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors bg-transparent" value={email} onChange={e=>setEmail(e.target.value)} placeholder="coach@email.com" />
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-slate-400 uppercase">Senha</label>
-                                <input type="password" className="w-full border-b-2 border-slate-200 p-2 font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors bg-transparent" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" />
+                                <input type="password" required className="w-full border-b-2 border-slate-200 p-2 font-bold text-slate-700 outline-none focus:border-blue-500 transition-colors bg-transparent" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" />
                             </div>
-                            <button type="submit" className="w-full text-white font-black py-3 rounded-lg mt-6 shadow-lg hover:opacity-90 transition-opacity flex justify-center items-center gap-2" style={{backgroundColor: themeColor}}>
-                                <Icon name="check" size={18} /> ENTRAR NO SISTEMA
+                            <button type="submit" disabled={loading} className={`w-full text-white font-black py-3 rounded-lg mt-6 shadow-lg transition-opacity flex justify-center items-center gap-2 ${loading ? 'opacity-50' : 'hover:opacity-90'}`} style={{backgroundColor: themeColor}}>
+                                {loading ? 'CONECTANDO...' : <><Icon name="check" size={18} /> ENTRAR NO SISTEMA</>}
                             </button>
                         </form>
                     </div>
@@ -246,7 +305,7 @@
             return (<div className="relative flex items-center justify-center"><svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible"><circle cx={center} cy={center} r={scale} fill="none" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="2,2"/><line x1={center} y1={center - scale} x2={center} y2={center + scale} stroke="#cbd5e1" strokeWidth="1" /><line x1={center - scale} y1={center} x2={center + scale} y2={center} stroke="#cbd5e1" strokeWidth="1" /><polygon points={pointsStr} fill={color} fillOpacity="0.3" stroke={color} strokeWidth="2" /><text x={center} y={center - scale - 10} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#64748b">NOTA</text><text x={center + scale + 10} y={center + 3} textAnchor="start" fontSize="9" fontWeight="bold" fill="#64748b">GOLS</text><text x={center} y={center + scale + 12} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#64748b">PRES</text><text x={center - scale - 10} y={center + 3} textAnchor="end" fontSize="9" fontWeight="bold" fill="#64748b">AST</text></svg></div>);
         };
 
-        // --- ESCALAÇÃO SCOUT INTELLIGENCE (LAYOUT NOVO) ---
+        // --- ESCALAÇÃO SCOUT INTELLIGENCE ---
         const SmartLineupView = ({ players, history, themeColor }) => {
             const [selectedSlot, setSelectedSlot] = useState(null); 
             const [lineup, setLineup] = useState(Array(11).fill(null));
@@ -340,7 +399,7 @@
                         ))}
                     </div>
 
-                    {/* TOP 5 RANKINGS (SCROLLABLE GRID) */}
+                    {/* TOP 5 RANKINGS */}
                     <div className="p-4">
                         <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><Icon name="trophy" className="text-yellow-500"/> Top 5 - Médias por Posição</h3>
                         <div className="flex gap-4 overflow-x-auto pb-4">
@@ -377,7 +436,7 @@
             );
         };
 
-        // --- MODAL DE CONFIGURAÇÕES (COM BACKUP E LOGOUT) ---
+        // --- MODAL DE CONFIGURAÇÕES (COM LOGOUT) ---
         const SettingsModal = ({ show, onClose, themeColor, setThemeColor, teamLogo, setTeamLogo, teamName, setTeamName, onLogout }) => {
             if (!show) return null;
             
@@ -413,6 +472,14 @@
                 reader.readAsText(file); 
             };
 
+            const handleLogout = () => {
+                if(confirm("Tem certeza que deseja sair do sistema?")) {
+                    firebase.auth().signOut().then(() => {
+                        onLogout();
+                    });
+                }
+            };
+
             return ( 
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm no-print" onClick={onClose}> 
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden" onClick={e=>e.stopPropagation()}> 
@@ -431,7 +498,7 @@
                             </div> 
                             
                             <div className="border-t pt-4 flex flex-col gap-2"> 
-                                <button onClick={handleExport} className="w-full bg-blue-50 text-blue-700 border-blue-200 border py-2 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"><Icon name="download"/> BAIXAR BACKUP (.JSON)</button> 
+                                <button onClick={handleExport} className="w-full bg-blue-50 text-blue-700 border-blue-200 border py-2 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"><Icon name="download"/> BAIXAR BACKUP LOCAL</button> 
                                 <div className="relative"> 
                                     <input type="file" id="importFile" accept=".json" onChange={handleImport} className="hidden" /> 
                                     <label htmlFor="importFile" className="w-full bg-green-50 text-green-700 border-green-200 border py-2 rounded text-xs font-bold flex items-center justify-center gap-2 cursor-pointer hover:bg-green-100 transition-colors"><Icon name="upload"/> RESTAURAR BACKUP</label> 
@@ -439,7 +506,7 @@
                             </div> 
 
                             <div className="border-t mt-4 pt-4 flex flex-col gap-2"> 
-                                <button onClick={onLogout} className="w-full bg-red-50 text-red-600 border-red-200 border py-2 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">SAIR DO SISTEMA (LOGOUT)</button>
+                                <button onClick={handleLogout} className="w-full bg-red-50 text-red-600 border-red-200 border py-2 rounded text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">SAIR DO SISTEMA (LOGOUT)</button>
                             </div>
                         </div> 
                     </div> 
@@ -447,7 +514,7 @@
             ); 
         };
 
-        // --- MODALS (Other) ---
+        // --- OUTROS MODAIS ---
         const AnalysisModal = ({ show, onClose, themeColor, players, history, currentDate }) => {
             if (!show) return null;
             const sessionData = (history && history[currentDate]) || { ratings: {} };
@@ -498,7 +565,7 @@
             <div className="flex gap-2"><button onClick={()=>onUpdate('injured', !player.injured)} className={`flex-1 py-2 rounded-lg font-bold text-white text-xs ${player.injured?'bg-red-500':'bg-green-500'}`}>{player.injured?'NO DM':'APTO'}</button><button onClick={()=>onUpdate('suspended', !player.suspended)} className={`flex-1 py-2 rounded-lg font-bold text-white text-xs ${player.suspended?'bg-yellow-500':'bg-slate-300'}`}>{player.suspended?'SUSPENSO':'OK'}</button></div> <div className="bg-slate-50 p-3 rounded border border-slate-200"><label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block flex gap-1"><Icon name="book" size={10}/> Contrato</label><div className="flex gap-2"><div className="flex-1"><label className="text-[9px] text-slate-500 font-bold">Vencimento</label><input type="date" className="w-full border rounded text-xs px-1 py-1" value={player.contractEnd || ''} onChange={e=>onUpdate('contractEnd', e.target.value)}/></div><div className="flex-1"><label className="text-[9px] text-slate-500 font-bold">Tipo</label><select className="w-full border rounded text-xs px-1 py-1 bg-white" value={player.contractType || 'Definitivo'} onChange={e=>onUpdate('contractType', e.target.value)}><option value="Definitivo">Definitivo</option><option value="Empréstimo">Empréstimo</option></select></div></div></div> <div className="bg-slate-50 p-2 rounded border"><label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block text-center">Bolas Paradas (Cobradores)</label><div className="flex justify-between gap-2"><button onClick={()=>toggleAttr('PENALTI')} className={`flex-1 py-1 rounded text-[10px] font-bold border ${isAttr('PENALTI') ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-400'}`}>Pênalti</button><button onClick={()=>toggleAttr('FALTA')} className={`flex-1 py-1 rounded text-[10px] font-bold border ${isAttr('FALTA') ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-400'}`}>Falta</button><button onClick={()=>toggleAttr('ESCANTEIO')} className={`flex-1 py-1 rounded text-[10px] font-bold border ${isAttr('ESCANTEIO') ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-400'}`}>Escanteio</button></div></div> <div className="grid grid-cols-3 gap-2"><div><label className="glass-label text-slate-500">Idade</label><input type="number" className="w-full border-b text-center" value={player.age||''} onChange={e=>onUpdate('age',e.target.value)}/></div><div><label className="glass-label text-slate-500">Altura</label><input type="number" className="w-full border-b text-center" value={player.height||''} onChange={e=>onUpdate('height',e.target.value)}/></div><div><label className="glass-label text-slate-500">Peso</label><input type="number" className="w-full border-b text-center" value={player.weight||''} onChange={e=>onUpdate('weight',e.target.value)}/></div></div> <div><label className="glass-label text-slate-500">Posição</label><select className="w-full border-b bg-white" value={player.pos} onChange={e=>onUpdate('pos',e.target.value)}>{positions.map(p=><option key={p} value={p}>{p}</option>)}</select></div> <div className="bg-slate-50 p-4 rounded-lg border border-slate-100"><h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Estatísticas</h4><div className="grid grid-cols-2 gap-4 text-xs"><div><label className="font-bold text-slate-500">Gols</label><input type="number" className="w-full border-b bg-transparent" value={player.stats?.g||0} onChange={e=>onUpdateStat('g',e.target.value)}/></div><div><label className="font-bold text-slate-500">Assist.</label><input type="number" className="w-full border-b bg-transparent" value={player.stats?.a||0} onChange={e=>onUpdateStat('a',e.target.value)}/></div><div><label className="font-bold text-slate-500">Amarelos</label><input type="number" className="w-full border-b bg-transparent" value={player.stats?.yc||0} onChange={e=>onUpdateStat('yc',e.target.value)}/></div><div><label className="font-bold text-slate-500">Vermelhos</label><input type="number" className="w-full border-b bg-transparent" value={player.stats?.rc||0} onChange={e=>onUpdateStat('rc',e.target.value)}/></div></div></div> </div> </div> </div> );
         };
 
-        // --- VIEWS ---
+        // --- VIEWS PRINCIPAIS DO SISTEMA ---
         const PerformanceView = ({ players, history, themeColor }) => {
             const [selectedPlayer, setSelectedPlayer] = useState(null); 
             const [viewMode, setViewMode] = useState('ranking'); 
@@ -671,39 +738,63 @@
             );
         };
 
-        // --- APP PRINCIPAL ---
-        const App = () => {
-            const [isAuthenticated, setIsAuthenticated] = useSafeStorage('pc_auth_v2', false);
+        // --- COMPONENTE PRINCIPAL (MONITOR DE AUTENTICAÇÃO) ---
+        const MainApp = () => {
+            const [user, setUser] = useState(null);
+            const [loadingAuth, setLoadingAuth] = useState(true);
+
+            useEffect(() => {
+                const el = document.getElementById('loading');
+                
+                // Monitora se o usuário está logado no Firebase
+                const unsubscribe = firebase.auth().onAuthStateChanged((currentUser) => {
+                    setUser(currentUser);
+                    setLoadingAuth(false);
+                    if(el) el.style.display = 'none';
+                });
+
+                return () => unsubscribe();
+            }, []);
+
+            if (loadingAuth) return null; // A div #loading nativa cobre essa parte
+
+            if (!user) {
+                return <LoginScreen themeColor="#1e3a8a" />;
+            }
+
+            return <ProCoachApp user={user} />;
+        };
+
+        // --- APP INTERNO (SÓ APARECE SE ESTIVER LOGADO) ---
+        const ProCoachApp = ({ user }) => {
             const [tab, setTab] = useState('dashboard');
             
-            // DADOS PERSISTENTES (LOCAL STORAGE)
-            const [themeColor, setThemeColor] = useSafeStorage('pc_theme', '#1e3a8a');
-            const [header, setHeader] = useSafeStorage('pc_header', { local: 'CT', time: '09:00', dur: '90' });
-            const [teamName, setTeamName] = useSafeStorage('pc_team_name', 'MINHA EQUIPE');
-            const [teamLogo, setTeamLogo] = useSafeStorage('pc_team_logo_url', null);
+            // TODOS os dados agora usam o novo hook que sincroniza com o Firestore!
+            const [themeColor, setThemeColor] = useFirebaseStorage('pc_theme', '#1e3a8a');
+            const [header, setHeader] = useFirebaseStorage('pc_header', { local: 'CT', time: '09:00', dur: '90' });
+            const [teamName, setTeamName] = useFirebaseStorage('pc_team_name', 'MINHA EQUIPE');
+            const [teamLogo, setTeamLogo] = useFirebaseStorage('pc_team_logo_url', null);
             
-            const [players, setPlayers] = useSafeStorage('pc_players', [{name: "Jogador 1", image: null, age: '22', pos: 'Zagueiro', injured: false, suspended: false, stats: {h:'180',g:5,a:2,yc:1,rc:0}, attributes: []}]);
+            const [players, setPlayers] = useFirebaseStorage('pc_players', [{name: "Jogador 1", image: null, age: '22', pos: 'Zagueiro', injured: false, suspended: false, stats: {h:'180',g:5,a:2,yc:1,rc:0}, attributes: []}]);
             
-            const [sessionHistory, setSessionHistory] = useSafeStorage('pc_history_v2', {});
-            const [scoutingData, setScoutingData] = useSafeStorage('pc_scouting', {});
-            const [scoutingHistory, setScoutingHistory] = useSafeStorage('pc_scouting_history', []);
-            const [matchData, setMatchData] = useSafeStorage('pc_match_report', {});
-            const [matchHistory, setMatchHistory] = useSafeStorage('pc_match_history', []);
+            const [sessionHistory, setSessionHistory] = useFirebaseStorage('pc_history_v2', {});
+            const [scoutingData, setScoutingData] = useFirebaseStorage('pc_scouting', {});
+            const [scoutingHistory, setScoutingHistory] = useFirebaseStorage('pc_scouting_history', []);
+            const [matchData, setMatchData] = useFirebaseStorage('pc_match_report', {});
+            const [matchHistory, setMatchHistory] = useFirebaseStorage('pc_match_history', []);
             const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
             const [sessionDrills, setSessionDrills] = useState([]);
-            const [libraryDrills, setLibraryDrills] = useSafeStorage('pc_library', [{ libId: 1, name: 'Rondo 4x1', method: 'Treino Tático', dim: '10x10', time: '15', desc: 'Manutenção da posse.', variants: '', image: null }]);
-            const [microData, setMicroData] = useSafeStorage('pc_micro_v7', {});
-            const [calendarData, setCalendarData] = useSafeStorage('pc_calendar_v7', {});
+            const [libraryDrills, setLibraryDrills] = useFirebaseStorage('pc_library', [{ libId: 1, name: 'Rondo 4x1', method: 'Treino Tático', dim: '10x10', time: '15', desc: 'Manutenção da posse.', variants: '', image: null }]);
+            const [microData, setMicroData] = useFirebaseStorage('pc_micro_v7', {});
+            const [calendarData, setCalendarData] = useFirebaseStorage('pc_calendar_v7', {});
             const [showSettings, setShowSettings] = useState(false);
             const [boardWeekDate, setBoardWeekDate] = useState(new Date()); 
-            const [boardHistory, setBoardHistory] = useSafeStorage('pc_board_history_final', {}); 
-            const [noticeBoard, setNoticeBoard] = useSafeStorage('pc_notice_board', '');
-            const [notices, setNotices] = useSafeStorage('pc_notices_list', []);
+            const [boardHistory, setBoardHistory] = useFirebaseStorage('pc_board_history_final', {}); 
+            const [noticeBoard, setNoticeBoard] = useFirebaseStorage('pc_notice_board', '');
+            const [notices, setNotices] = useFirebaseStorage('pc_notices_list', []);
             
-            const [seasonStats, setSeasonStats] = useSafeStorage('pc_season_stats_v2', { league: { p:0, w:0, d:0, l:0, gf:0, ga:0 }, cup: { p:0, w:0, d:0, l:0, gf:0, ga:0 }, friendly: { p:0, w:0, d:0, l:0, gf:0, ga:0 } }); 
+            const [seasonStats, setSeasonStats] = useFirebaseStorage('pc_season_stats_v2', { league: { p:0, w:0, d:0, l:0, gf:0, ga:0 }, cup: { p:0, w:0, d:0, l:0, gf:0, ga:0 }, friendly: { p:0, w:0, d:0, l:0, gf:0, ga:0 } }); 
             const [showStatsModal, setShowStatsModal] = useState(false);
-
-            useEffect(() => { const el = document.getElementById('loading'); if(el) el.style.display = 'none'; }, []);
 
             const handleAddToSession = (libItem) => { setSessionDrills(prev => [...prev, { ...libItem, id: Date.now() }]); };
             
@@ -715,23 +806,20 @@
             const changeBoardWeek = (days) => { const newDate = new Date(boardWeekDate); newDate.setDate(newDate.getDate() + days); setBoardWeekDate(newDate); };
             const handleAddToBoardFromLibrary = (day, imgUrl) => { const currentImages = currentBoardData[day] || []; updateBoardData(day, [...currentImages, imgUrl]); };
 
-            // Se não estiver logado, exibe a tela de Login
-            if (!isAuthenticated) {
-                return <LoginScreen onLogin={() => setIsAuthenticated(true)} themeColor={themeColor} />;
-            }
-
             return (
-                <div className="flex flex-col h-full bg-slate-100 relative">
-                    <NetworkStatus />
+                <div className="flex flex-col h-full bg-slate-100 relative pt-6"> {/* pt-6 para dar espaço para a barra de rede */}
+                    <div className="absolute top-0 w-full z-50">
+                        <NetworkStatus />
+                    </div>
                     
-                    <SettingsModal show={showSettings} onClose={()=>setShowSettings(false)} themeColor={themeColor} setThemeColor={setThemeColor} teamLogo={teamLogo} setTeamLogo={setTeamLogo} teamName={teamName} setTeamName={setTeamName} onLogout={() => setIsAuthenticated(false)} />
+                    <SettingsModal show={showSettings} onClose={()=>setShowSettings(false)} themeColor={themeColor} setThemeColor={setThemeColor} teamLogo={teamLogo} setTeamLogo={setTeamLogo} teamName={teamName} setTeamName={setTeamName} onLogout={() => {}} />
                     <SeasonStatsModal show={showStatsModal} onClose={()=>setShowStatsModal(false)} stats={seasonStats} setStats={setSeasonStats} themeColor={themeColor} />
                     
                     {/* Header */}
                     <div className="bg-white border-b p-2 px-4 flex justify-between items-center shadow-sm z-30 shrink-0">
                         <div className="flex items-center gap-4">
                             {teamLogo && <img src={teamLogo} className="w-10 h-10 object-contain" />}
-                            <div className="font-black text-xl italic text-slate-800"><span style={{color: themeColor}}>{teamName}</span> <span className="text-[9px] not-italic bg-purple-600 text-white px-1.5 py-0.5 rounded ml-1 font-bold">V2106</span></div>
+                            <div className="font-black text-xl italic text-slate-800"><span style={{color: themeColor}}>{teamName}</span> <span className="text-[9px] not-italic bg-purple-600 text-white px-1.5 py-0.5 rounded ml-1 font-bold">CLOUD</span></div>
                         </div>
                         <div className="flex gap-2 items-center"> <button onClick={()=>window.print()} className="p-2 rounded hover:bg-slate-100 text-slate-400 no-print" title="Imprimir Rápido"><Icon name="printer"/></button> <button onClick={()=>setShowSettings(true)} className="p-2 rounded hover:bg-slate-100 text-slate-400 no-print" title="Configurações"><Icon name="settings"/></button> </div>
                     </div>
@@ -769,7 +857,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<MainApp />);
     </script>
 </body>
 </html>
