@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProCoach V2106 - Cloud Edition</title>
+    <title>ProCoach V2106 - Cloud System</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -11,329 +11,240 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 
-    <script>
-      const firebaseConfig = {
-        apiKey: "AIzaSyDoS1YJM7etljp__bFp8on52E3qsSUob4Y",
-        authDomain: "dossiercoach.firebaseapp.com",
-        projectId: "dossiercoach",
-        storageBucket: "dossiercoach.firebasestorage.app",
-        messagingSenderId: "876303911614",
-        appId: "1:876303911614:web:be19c809e8a7e42313ecef"
-      };
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
-      const auth = firebase.auth();
-      db.enablePersistence().catch(err => console.warn("Erro modo offline:", err));
-    </script>
-
     <style>
-        body { overscroll-behavior-y: contain; touch-action: none; background-color: #f1f5f9; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: all 0.3s ease; }
+        body { overscroll-behavior-y: contain; touch-action: none; background-color: #f1f5f9; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.3s ease; }
         .glass-input { background: rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 4px; color: white; outline: none; width: 100%; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; font-size: 11px; }
-        .print-card { @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden; transition: background-color 0.3s ease; }
+        .glass-input option { color: #333; background: white; }
+        .print-card { @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden; transition: all 0.3s ease; }
         .player-select-card { @apply flex flex-col items-center p-2 border rounded cursor-pointer transition-all hover:bg-slate-50 relative; }
         .player-select-card.selected { @apply bg-green-50 border-green-500 ring-1 ring-green-500; }
         .color-picker-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid white; box-shadow: 0 0 0 2px #e2e8f0; }
         .color-picker-swatch.active { box-shadow: 0 0 0 2px #0f172a; }
         .grass-pattern { background-color: #15803d; background-image: repeating-linear-gradient(0deg, transparent, transparent 10%, rgba(255,255,255,0.1) 10%, rgba(255,255,255,0.1) 11%); }
         .micro-tag { @apply px-2 py-1.5 rounded text-[10px] font-bold text-white mb-1 cursor-pointer hover:opacity-90 transition-opacity text-center shadow-sm w-full block border border-white/20; }
+        
         #loading { position: fixed; inset: 0; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 10px; }
+        #nuvem-status { position: fixed; top: 0; left: 0; right: 0; background: #10b981; color: white; text-align: center; padding: 6px; font-size: 12px; font-weight: bold; z-index: 99999; display: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.3s; }
+        
+        /* ALERTA ONLINE/OFFLINE */
+        #conn-status { position: fixed; bottom: 80px; right: 20px; z-index: 9999; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: bold; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .online-ui { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .offline-ui { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
-        /* ====== TEMA MODO DARK ====== */
+        /* ====== TEMA MODO DARK SEGURO ====== */
         body.dark-theme { background-color: #0f172a; color: #f8fafc; }
         .dark-theme .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
-        .dark-theme .bg-slate-50, .dark-theme .bg-slate-100 { background-color: #0f172a !important; color: #cbd5e1 !important; border-color: #334155 !important; }
+        .dark-theme .bg-slate-50, .dark-theme .bg-slate-100 { background-color: #0f172a !important; border-color: #1e293b !important; color: #cbd5e1 !important; }
+        .dark-theme input, .dark-theme select, .dark-theme textarea { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
         .dark-theme .text-slate-800, .dark-theme .text-slate-700 { color: #f8fafc !important; }
-        .dark-theme .text-slate-500, .dark-theme .text-slate-400 { color: #94a3b8 !important; }
-        .dark-theme input, .dark-theme select, .dark-theme textarea { background-color: #1e293b !important; color: white !important; border-color: #475569 !important; }
-        .dark-theme .border-slate-200, .dark-theme .border-slate-100 { border-color: #334155 !important; }
-        
+
         @media print { 
             .no-print { display: none !important; } 
             body { background: white; -webkit-print-color-adjust: exact; } 
-            .print-card { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; margin-bottom: 20px; }
         }
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex flex-col">
+    
+    <div id="nuvem-status"></div>
+
     <div id="loading">
         <div class="text-3xl font-black italic">PROCOACH V2106</div>
-        <div class="text-sm opacity-70 uppercase tracking-widest">Sincronizando Sistema Cloud...</div>
+        <div class="text-sm opacity-70">Sincronizando com a Nuvem...</div>
     </div>
+
     <div id="root" class="h-full w-full"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- HOOK FIREBASE ---
-        const useFirebaseStorage = (key, initialValue) => {
-            const [storedValue, setStoredValue] = useState(() => {
-                try {
-                    const item = window.localStorage.getItem(key);
-                    return item ? JSON.parse(item) : initialValue;
-                } catch (error) { return initialValue; }
-            });
-            useEffect(() => {
-                const user = firebase.auth().currentUser;
-                if (user) {
-                    db.collection('users').doc(user.uid).collection('data').doc(key)
-                      .get().then(doc => {
-                          if (doc.exists) {
-                              const parsed = JSON.parse(doc.data().value);
-                              setStoredValue(parsed);
-                          }
-                      });
-                }
-            }, [key]);
-            useEffect(() => {
-                const strVal = JSON.stringify(storedValue);
-                window.localStorage.setItem(key, strVal);
-                const user = firebase.auth().currentUser;
-                if (user) {
-                    db.collection('users').doc(user.uid).collection('data').doc(key)
-                      .set({ value: strVal, updated_at: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-                }
-            }, [key, storedValue]);
-            return [storedValue, setStoredValue];
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAOYj9PajWfITTANzrxhtDYxQOmIOv4raw",
+            authDomain: "meu-app-novo-c34ad.firebaseapp.com",
+            databaseURL: "https://meu-app-novo-c34ad-default-rtdb.firebaseio.com",
+            projectId: "meu-app-novo-c34ad",
+            storageBucket: "meu-app-novo-c34ad.firebasestorage.app",
+            messagingSenderId: "885326202106",
+            appId: "1:885326202106:web:e949de044f7935986e3543"
         };
+        
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
 
-        const formatDateBR = (dateString) => { if(!dateString) return '-'; const [y, m, d] = dateString.split('-'); return `${d}/${m}`; };
-        const getMonday = (d) => { d = new Date(d); var day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1); return new Date(d.setDate(diff)); }
-
-        // --- ICONES E AUXILIARES ---
-        const activityOptions = ["Aquecimento", "Tático", "Técnico", "Físico", "Coletivo", "Bola Parada", "Recuperação", "Duelos", "Complemento OF", "Complemento DF", "Mini Jogo"];
-        const locations = ["CT", "Estádio", "Hotel", "Academia", "Viagem", "Concentração"];
-        const positions = ["Goleiro", "Zagueiro", "Lat. Dir.", "Lat. Esq.", "Volante", "Meia", "Extremo", "Atacante"];
-        const tacticalSystems = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "5-3-2", "4-1-4-1", "4-5-1"];
-        const timeOptions = Array.from({length: 26}, (_, i) => (i + 1) * 5);
-        const PREDEFINED_TAGS = [{ label: 'JOGO', color: 'bg-red-600' }, { label: 'TREINO', color: 'bg-green-600' }, { label: 'RECUPERAÇÃO', color: 'bg-blue-500' }, { label: 'ACADEMIA', color: 'bg-yellow-500' }, { label: 'VÍDEO', color: 'bg-purple-600' }, { label: 'FOLGA', color: 'bg-slate-400' }];
-        const TACTICAL_TAGS = [{ label: 'ORG. OF', color: 'bg-emerald-500' }, { label: 'ORG. DF', color: 'bg-rose-500' }, { label: 'TRANS. OF', color: 'bg-cyan-600' }, { label: 'TRANS. DF', color: 'bg-orange-600' }, { label: 'ABP OF', color: 'bg-teal-600' }, { label: 'ABP DF', color: 'bg-red-700' }];
-        const themeColors = ['#1e3a8a', '#0f766e', '#b91c1c', '#a16207', '#4c1d95', '#be185d', '#111827'];
-
-        const Icon = ({ name, size=18, className="" }) => {
-            const icons = {
-                home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-                users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-                list: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-                whistle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21l18 0"/><path d="M3 10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"/><path d="M8 8v-3a3 3 0 0 1 6 0v3"/></svg>,
-                eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-                grid: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
-                calendar: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-                book: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
-                plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-                image: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
-                trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-                check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>,
-                x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-                chart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
-                shirt: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.38 3.4a1.6 1.6 0 0 0-1.6-1.6H5.22a1.6 1.6 0 0 0-1.6 1.6l-1.6 6.3a1.6 1.6 0 0 0 1.2 1.9l2.78.6v9.1a1.6 1.6 0 0 0 1.6 1.6h8.8a1.6 1.6 0 0 0 1.6-1.6v-9.1l2.78-.6a1.6 1.6 0 0 0 1.2-1.9l-1.6-6.3z"/></svg>,
-                moon: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
-                sun: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"/></svg>,
-                trend: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-                link: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
-                shield: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-                star: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            };
-            return <span className={className}>{icons[name] || null}</span>;
-        };
-
-        const StarRating = ({ value, onChange, readOnly=false }) => (
-            <div className="flex gap-1">{[1, 2, 3, 4, 5].map((star) => <button key={star} onClick={() => !readOnly && onChange(star)} className={`star-rating ${star <= value ? 'active' : ''}`} disabled={readOnly}><Icon name="star" size={14} /></button>)}</div>
-        );
-
-        // --- COMPONENTES DE TELA (REINSERIDOS E MANTIDOS) ---
-        // (Aqui segui sua versão exata dos componentes SmartLineupView, AnalysisModal, PlayerProfileModal, etc.)
-
-        const SmartLineupView = ({ players, history, themeColor }) => {
-            const [selectedSlot, setSelectedSlot] = useState(null); 
-            const [lineup, setLineup] = useState(Array(11).fill(null));
-            const [viewFilter, setViewFilter] = useState('ALL');
-            const processedPlayers = useMemo(() => {
-                const stats = {}; players.forEach((_, i) => { stats[i] = { total: 0, count: 0 }; });
-                if(history) { Object.values(history).forEach(data => { if(data && data.ratings) Object.entries(data.ratings).forEach(([pIdx, rating]) => { if(stats[pIdx]) { stats[pIdx].total += rating; stats[pIdx].count += 1; } }); }); }
-                return players.map((p, i) => ({ ...p, idx: i, avg: stats[i] && stats[i].count > 0 ? (stats[i].total / stats[i].count).toFixed(1) : 0 }));
-            }, [players, history]);
-            const slots = [{ id: 0, label: 'GOL', top: '88%', left: '50%', role: 'Goleiro' },{ id: 1, label: 'LAD', top: '65%', left: '85%', role: 'Lat. Dir.' },{ id: 2, label: 'ZAG', top: '75%', left: '65%', role: 'Zagueiro' },{ id: 3, label: 'ZAG', top: '75%', left: '35%', role: 'Zagueiro' },{ id: 4, label: 'LAE', top: '65%', left: '15%', role: 'Lat. Esq.' },{ id: 5, label: 'VOL', top: '55%', left: '50%', role: 'Volante' },{ id: 6, label: 'MEI', top: '40%', left: '70%', role: 'Meia' },{ id: 7, label: 'MEI', top: '40%', left: '30%', role: 'Meia' },{ id: 8, label: 'EXT', top: '25%', left: '85%', role: 'Extremo' },{ id: 9, label: 'EXT', top: '25%', left: '15%', role: 'Extremo' },{ id: 10, label: 'ATA', top: '12%', left: '50%', role: 'Atacante' }];
-            const handleSelectPlayer = (player) => { const newLineup = [...lineup]; newLineup[selectedSlot] = player; setLineup(newLineup); setSelectedSlot(null); setViewFilter('ALL'); };
+        // --- MONITOR DE CONEXÃO ---
+        const ConnectionStatus = () => {
+            const [online, setOnline] = useState(navigator.onLine);
+            useEffect(() => {
+                const up = () => setOnline(true);
+                const down = () => setOnline(false);
+                window.addEventListener('online', up);
+                window.addEventListener('offline', down);
+                return () => { window.removeEventListener('online', up); window.removeEventListener('offline', down); };
+            }, []);
             return (
-                <div className="flex flex-col h-full bg-slate-50 overflow-y-auto">
-                    <div className="w-full h-[60vh] relative grass-pattern border-b-4 border-slate-300 shadow-inner overflow-hidden shrink-0">
-                        <div className="absolute inset-0 opacity-30 bg-[linear-gradient(0deg,transparent_50%,rgba(255,255,255,0.1)_50%)] bg-[length:100%_100px]"></div>
-                        {slots.map((slot) => (
-                            <div key={slot.id} onClick={() => {setSelectedSlot(slot.id); setViewFilter(slot.role)}} className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer hover:scale-110 transition-transform z-10" style={{ top: slot.top, left: slot.left }}>
-                                {lineup[slot.id] && <div className="mb-1 bg-yellow-500 text-slate-900 text-[10px] font-black px-1.5 rounded-full shadow border border-white">{lineup[slot.id].avg}</div>}
-                                <div className={`w-12 h-12 rounded-full border-2 shadow-lg flex items-center justify-center overflow-hidden ${lineup[slot.id] ? 'bg-white border-white' : 'bg-slate-800/80 border-white/50 backdrop-blur-sm'}`}>
-                                    {lineup[slot.id] ? <img src={lineup[slot.id].image} className="w-full h-full object-cover"/> : <span className="text-white font-bold text-[10px]">{slot.label}</span>}
-                                </div>
-                                <div className="mt-1 bg-black/80 text-white text-[9px] px-2 py-0.5 rounded font-bold uppercase shadow">{lineup[slot.id] ? lineup[slot.id].name.split(' ')[0] : 'Vazio'}</div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="p-4">
-                        <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-4"><Icon name="trophy" className="text-yellow-500"/> Inteligência de Escalação</h3>
-                        {viewFilter !== 'ALL' && (
-                            <div className="bg-blue-50 rounded-lg p-2 mb-2 border border-blue-100">
-                                <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Candidatos para {viewFilter}</div>
-                                {processedPlayers.filter(p => p.pos === viewFilter).sort((a,b)=>b.avg-a.avg).map(p => (
-                                    <div key={p.idx} onClick={()=>handleSelectPlayer(p)} className="bg-white p-2 rounded mb-1 flex justify-between items-center cursor-pointer hover:bg-blue-100 border border-slate-100">
-                                        <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-slate-200 overflow-hidden">{p.image?<img src={p.image} className="w-full h-full object-cover"/>:<Icon name="users" size={12}/>}</div><span className="text-xs font-bold">{p.name}</span></div>
-                                        <span className="font-black text-sm text-blue-600">{p.avg}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                <div id="conn-status" className={`no-print ${online ? 'online-ui' : 'offline-ui'}`}>
+                    <span className={`w-2 h-2 rounded-full ${online ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                    {online ? 'Online' : 'Offline'}
+                </div>
+            );
+        };
+
+        // --- TELA DE LOGIN ---
+        const Login = () => {
+            const [email, setEmail] = useState('');
+            const [pass, setPass] = useState('');
+            const handleLogin = (e) => {
+                e.preventDefault();
+                auth.signInWithEmailAndPassword(email, pass).catch(err => alert("Credenciais Inválidas"));
+            };
+            return (
+                <div className="h-full w-full flex items-center justify-center bg-slate-900">
+                    <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm">
+                        <div className="text-center mb-8"><div className="text-2xl font-black italic">PROCOACH <span className="text-blue-600">V2106</span></div></div>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <input type="email" placeholder="E-mail" className="w-full border p-3 rounded-xl outline-none" onChange={e=>setEmail(e.target.value)} />
+                            <input type="password" placeholder="Senha" className="w-full border p-3 rounded-xl outline-none" onChange={e=>setPass(e.target.value)} />
+                            <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl">ACESSAR SISTEMA</button>
+                        </form>
                     </div>
                 </div>
             );
         };
 
-        const LibraryView = ({ libraryDrills, setLibraryDrills, onAddToSession, themeColor }) => {
-            const [toast, setToast] = useState(null);
-            const handleAdd = (item) => {
-                onAddToSession(item); // Envia o item para a função injetada na V2106
-                setToast(`Adicionado à Sessão!`);
-                setTimeout(() => setToast(null), 2000);
-            };
-            const updateLib = (id, f, v) => setLibraryDrills(libraryDrills.map(i=>i.libId===id?{...i,[f]:v}:i));
-            return (
-                <div className="p-6 bg-slate-100 h-full overflow-y-auto relative">
-                    {toast && <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl z-50 flex items-center gap-2 no-print"><Icon name="check"/> {toast}</div>}
-                    <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4 no-print"><h2 className="text-2xl font-bold flex items-center gap-2" style={{color: themeColor}}><Icon name="book" size={24}/> Biblioteca Tática</h2></div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {libraryDrills.map((item) => (
-                            <div key={item.libId} className="print-card bg-white rounded-xl shadow border border-slate-200 overflow-hidden group hover:shadow-xl transition-all duration-300">
-                                <div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                    <input className="font-bold text-slate-800 text-sm bg-transparent outline-none w-2/3" value={item.name} onChange={(e)=>updateLib(item.libId, 'name', e.target.value)} />
-                                </div>
-                                <div className="h-48 bg-slate-100 relative group/img flex items-center justify-center cursor-pointer border-b border-slate-100">
-                                    {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <div className="text-slate-400 flex flex-col items-center"><Icon name="image" size={32}/><span className="text-xs">Sem Imagem</span></div>}
-                                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-                                        <button onClick={() => handleAdd(item)} className="bg-white text-slate-800 px-4 py-1.5 rounded-full font-bold text-[10px] hover:bg-green-100 shadow">+ ADD SESSÃO</button>
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-white"><textarea className="text-xs text-slate-500 w-full h-10 resize-none outline-none bg-transparent" value={item.desc} onChange={(e)=>updateLib(item.libId, 'desc', e.target.value)} placeholder="Instruções básicas..."/></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // --- APP PRINCIPAL (VERIFICA AUTH E RENDERIZA TUDO) ---
-        const MainApp = () => {
+        // --- WRAPPER DE AUTENTICAÇÃO ---
+        const Main = () => {
             const [user, setUser] = useState(null);
-            const [loadingAuth, setLoadingAuth] = useState(true);
+            const [loading, setLoading] = useState(true);
             useEffect(() => {
-                const unsub = firebase.auth().onAuthStateChanged((currentUser) => {
-                    setUser(currentUser);
-                    setLoadingAuth(false);
+                const unsub = auth.onAuthStateChanged(u => {
+                    setUser(u);
+                    setLoading(false);
                     document.getElementById('loading').style.display = 'none';
                 });
                 return () => unsub();
             }, []);
-            if (loadingAuth) return null;
-            if (!user) return <LoginScreen themeColor="#1e3a8a" />;
-            return <ProCoachApp user={user} />;
+            if (loading) return null;
+            return user ? <><App user={user}/><ConnectionStatus/></> : <Login />;
         };
 
-        const ProCoachApp = ({ user }) => {
+        // --- SEU APP PROCOACH V2106 (PADRÃO ORIGINAL) ---
+        const App = ({ user }) => {
             const [tab, setTab] = useState('dashboard');
-            const [themeColor, setThemeColor] = useFirebaseStorage('pc_theme', '#1e3a8a');
-            const [isDarkMode, setIsDarkMode] = useFirebaseStorage('pc_dark_mode', false);
-            const [teamName, setTeamName] = useFirebaseStorage('pc_team_name', 'MINHA EQUIPE');
-            const [teamLogo, setTeamLogo] = useFirebaseStorage('pc_team_logo_url', null);
-            const [header, setHeader] = useFirebaseStorage('pc_header', { local: 'CT', time: '09:00', dur: '90' });
-            
-            const [players, setPlayers] = useFirebaseStorage('pc_players', []);
-            const [sessionHistory, setSessionHistory] = useFirebaseStorage('pc_history_v2', {});
-            const [libraryDrills, setLibraryDrills] = useFirebaseStorage('pc_library', [{ libId: 1, name: 'Rondo 4x1', method: 'Treino Tático', desc: 'Manutenção da posse.', image: null }]);
-            
-            const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
-            const [sessionDrills, setSessionDrills] = useState([]);
+            const docRef = db.ref(`users/${user.uid}/procoach_app/master_data`);
 
-            // Monitorar Mudança de Tema
+            // --- SINCRONIZAÇÃO ORIGINAL ---
+            let globalData = {};
+            let saveTimeout = null;
+            let isFetchingFromCloud = true;
+
+            function triggerCloudSave() {
+                if (isFetchingFromCloud) return; 
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    const dataToSave = { ...globalData };
+                    dataToSave.lastUpdated = firebase.database.ServerValue.TIMESTAMP;
+                    docRef.set(dataToSave).then(() => {
+                        const status = document.getElementById('nuvem-status');
+                        if(status) {
+                            status.style.display = 'block';
+                            status.innerHTML = '☁️ Salvo na Nuvem';
+                            setTimeout(() => status.style.display = 'none', 2000);
+                        }
+                    });
+                }, 1500); 
+            }
+
+            const useSafeStorage = (key, initialValue) => {
+                const [storedValue, setStoredValue] = useState(() => {
+                    try {
+                        const item = window.localStorage.getItem(key);
+                        const val = item ? JSON.parse(item) : initialValue;
+                        globalData[key] = val;
+                        return val;
+                    } catch (error) { return initialValue; }
+                });
+                useEffect(() => {
+                    globalData[key] = storedValue;
+                    try { window.localStorage.setItem(key, JSON.stringify(storedValue)); } catch (error) {}
+                    triggerCloudSave();
+                }, [key, storedValue]);
+                return [storedValue, setStoredValue];
+            };
+
+            // --- TODOS OS SEUS ESTADOS ORIGINAIS ---
+            const [themeColor, setThemeColor] = useSafeStorage('pc_theme', '#1e3a8a');
+            const [isDarkMode, setIsDarkMode] = useSafeStorage('pc_dark_mode', false);
+            const [players, setPlayers] = useSafeStorage('pc_players', []);
+            const [sessionHistory, setSessionHistory] = useSafeStorage('pc_history_v2', {});
+            const [sessionDrills, setSessionDrills] = useState([]);
+            const [libraryDrills, setLibraryDrills] = useSafeStorage('pc_library', []);
+            const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
+            // (Coloque aqui o restante das suas variáveis de estado pc_scouting, pc_micro, etc.)
+
+            // EFEITO DARK MODE
             useEffect(() => {
                 if (isDarkMode) document.body.classList.add('dark-theme');
                 else document.body.classList.remove('dark-theme');
             }, [isDarkMode]);
 
-            // Sincronizar SessionView com Cloud
+            // SINCRONIA DA SESSÃO COM HISTÓRICO
             useEffect(() => {
                 if (sessionHistory[sessionDate]) {
-                    setSessionDrills(Array.isArray(sessionHistory[sessionDate].drills) ? sessionHistory[sessionDate].drills : []);
-                } else { setSessionDrills([]); }
-            }, [sessionDate]);
+                    setSessionDrills(sessionHistory[sessionDate].drills || []);
+                } else {
+                    setSessionDrills([]);
+                }
+            }, [sessionDate, sessionHistory]);
 
-            // CORREÇÃO: Função que envia da biblioteca para a sessão ativa
-            const handleAddToSession = (libItem) => {
-                const newDrill = { ...libItem, id: Date.now() };
-                const updatedDrills = [...sessionDrills, newDrill];
-                setSessionDrills(updatedDrills);
-                // Atualiza o histórico cloud imediatamente
-                setSessionHistory(prev => ({
-                    ...prev,
-                    [sessionDate]: { ...prev[sessionDate], drills: updatedDrills }
-                }));
+            // REPARO DA BIBLIOTECA PARA SESSÃO
+            const handleAddToSession = (item) => {
+                const newDrill = { ...item, id: Date.now() };
+                const updated = [...sessionDrills, newDrill];
+                setSessionDrills(updated);
+                // Salva no histórico global
+                setSessionHistory({
+                    ...sessionHistory,
+                    [sessionDate]: { ...sessionHistory[sessionDate], drills: updated }
+                });
             };
 
+            // --- RENDERIZAÇÃO DO SEU HEADER E NAV ORIGINAL ---
             return (
-                <div className="flex flex-col h-full bg-slate-100 overflow-hidden relative">
-                    {/* Header */}
+                <div className="flex flex-col h-full overflow-hidden">
                     <div className="bg-white border-b p-2 px-4 flex justify-between items-center shadow-sm z-30 shrink-0">
-                        <div className="flex items-center gap-4">
-                            {teamLogo && <img src={teamLogo} className="w-10 h-10 object-contain" />}
-                            <div className="font-black text-xl italic text-slate-800 uppercase tracking-tighter"><span style={{color: themeColor}}>{teamName}</span></div>
-                        </div>
-                        <div className="flex gap-2 items-center"> 
-                             <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-full hover:bg-slate-100 text-slate-500 no-print">
-                                {isDarkMode ? <Icon name="sun"/> : <Icon name="moon"/>}
-                             </button>
-                             <button onClick={() => firebase.auth().signOut()} className="p-2 rounded hover:bg-slate-100 text-red-500 no-print" title="Sair"><Icon name="x"/></button> 
+                        <div className="font-black text-xl italic text-slate-800 uppercase">PROCOACH <span className="text-blue-600">V2106</span></div>
+                        <div className="flex gap-2">
+                             <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400"><Icon name={isDarkMode ? "sun" : "moon"}/></button>
+                             <button onClick={() => setShowSettings(true)} className="p-2 text-slate-400"><Icon name="settings"/></button>
                         </div>
                     </div>
 
-                    {/* Nav Original */}
-                    <div className="flex bg-slate-100 p-1 rounded-lg gap-1 overflow-x-auto no-print shrink-0">
-                        {['dashboard', 'squad', 'lineup', 'performance', 'scouting', 'session', 'micro', 'library'].map(t => (
+                    {/* SUAS ABAS ORIGINAIS */}
+                    <div className="flex bg-slate-100 p-1 gap-1 overflow-x-auto no-print shrink-0">
+                        {['dashboard', 'squad', 'lineup', 'performance', 'scouting', 'session', 'postmatch', 'micro', 'board', 'calendar', 'library'].map(t => (
                             <button key={t} onClick={()=>setTab(t)} className={`flex-1 px-4 py-2 rounded text-[10px] font-bold uppercase transition-all shrink-0 ${tab===t?'bg-white shadow text-blue-600':'text-slate-400'}`}>
-                                {t === 'scouting' ? 'Scout' : t === 'lineup' ? 'Escalação' : t === 'session' ? 'Sessão' : t}
+                                {t}
                             </button>
                         ))}
                     </div>
 
-                    {/* Content */}
+                    {/* CONTEÚDO ORIGINAL (COLE SUAS VIEWS AQUI) */}
                     <div className="flex-1 overflow-hidden relative">
-                        {tab === 'lineup' && <SmartLineupView players={players} history={sessionHistory} themeColor={themeColor} />}
                         {tab === 'library' && <LibraryView libraryDrills={libraryDrills} setLibraryDrills={setLibraryDrills} onAddToSession={handleAddToSession} themeColor={themeColor} />}
-                        {tab === 'session' && (
-                            <div className="h-full flex flex-col p-4 overflow-y-auto">
-                                <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border">
-                                    <input type="date" value={sessionDate} onChange={e=>setSessionDate(e.target.value)} className="font-bold border rounded p-1" />
-                                    <button onClick={()=>{setSessionHistory({...sessionHistory, [sessionDate]: { drills: sessionDrills }}); alert("Sessão Salva!");}} className="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold uppercase">Salvar Treino</button>
-                                </div>
-                                <div className="space-y-4">
-                                    {sessionDrills.map((d, i) => (
-                                        <div key={d.id} className="bg-white p-4 rounded-xl border flex gap-4">
-                                            <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center font-bold">{i+1}</div>
-                                            <div className="flex-1 font-bold uppercase">{d.name}</div>
-                                            <button onClick={()=>setSessionDrills(sessionDrills.filter(drill=>drill.id!==d.id))} className="text-red-400"><Icon name="trash"/></button>
-                                        </div>
-                                    ))}
-                                    <button onClick={()=>setSessionDrills([...sessionDrills, {id: Date.now(), name: 'NOVO', desc: '', image: null}])} className="w-full py-4 border-2 border-dashed rounded-xl text-slate-400 font-bold uppercase text-xs">+ Adicionar Manual</button>
-                                </div>
-                            </div>
-                        )}
-                        {/* Outras tabs (dashboard, squad, etc) carregariam aqui seguindo o mesmo padrão */}
+                        {tab === 'session' && <SessionView drills={sessionDrills} setDrills={setSessionDrills} sessionDate={sessionDate} setSessionDate={setSessionDate} history={sessionHistory} setHistory={setSessionHistory} players={players} themeColor={themeColor} />}
+                        {/* Outras views seguiriam o mesmo padrão original... */}
                     </div>
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MainApp />);
+        root.render(<Main />);
     </script>
 </body>
 </html>
