@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProCoach V2106 - Cloud Edition & Tactical</title>
+    <title>ProCoach V2106 - Adriano Cabeça Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -34,40 +34,26 @@
     </script>
 
     <style>
-        body { overscroll-behavior-y: contain; touch-action: none; background-color: #f1f5f9; color: #0f172a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; transition: background-color 0.3s; }
-        .glass-input { background: rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 4px; color: white; outline: none; width: 100%; text-align: center; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; font-size: 11px; }
-        .print-card { @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden; }
-        .player-select-card { @apply flex flex-col items-center p-2 border rounded cursor-pointer transition-all hover:bg-slate-50 relative; }
-        .player-select-card.selected { @apply bg-green-50 border-green-500 ring-1 ring-green-500; }
+        body { overscroll-behavior-y: contain; background-color: #f1f5f9; color: #0f172a; font-family: sans-serif; }
+        .print-card { @apply bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-4; }
         .grass-pattern { background-color: #15803d; background-image: repeating-linear-gradient(0deg, transparent, transparent 10%, rgba(255,255,255,0.1) 10%, rgba(255,255,255,0.1) 11%); }
-        .micro-tag { @apply px-2 py-1.5 rounded text-[10px] font-bold text-white mb-1 cursor-pointer hover:opacity-90 transition-opacity text-center shadow-sm w-full block border border-white/20; }
-        
         #loading { position: fixed; inset: 0; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 10px; }
-        
-        /* THEME DARK OVERRIDES */
-        html.dark-theme body { background-color: #0f172a; color: #f8fafc; }
-        html.dark-theme .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc; }
-
-        @media print { 
-            .no-print { display: none !important; } 
-            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: black !important; } 
-            .print-card { page-break-inside: avoid; margin-bottom: 20px; }
-        }
+        @media print { .no-print { display: none !important; } body { background: white !important; } }
     </style>
 </head>
 <body class="h-screen w-screen overflow-hidden flex flex-col">
     
     <div id="loading">
         <div class="text-3xl font-black italic">PROCOACH V2106</div>
-        <div class="text-sm opacity-70">Sincronizando Dados...</div>
+        <div class="text-sm opacity-70">Conectando Adriano Cabeça...</div>
     </div>
 
     <div id="root" class="h-full w-full"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+        const { useState, useEffect, useMemo } = React;
 
-        // --- HOOK DE DADOS: LOCAL + CLOUD ---
+        // --- HOOK DE PERSISTÊNCIA ---
         const useFirebaseStorage = (key, initialValue) => {
             const [storedValue, setStoredValue] = useState(() => {
                 try {
@@ -82,13 +68,11 @@
                     db.collection('users').doc(user.uid).collection('data').doc(key)
                       .get().then(doc => {
                           if (doc.exists) {
-                              try {
-                                  const parsed = JSON.parse(doc.data().value);
-                                  setStoredValue(parsed);
-                                  window.localStorage.setItem(key, doc.data().value);
-                              } catch(e) { console.error("Erro JSON nuvem", e); }
+                              const parsed = JSON.parse(doc.data().value);
+                              setStoredValue(parsed);
+                              window.localStorage.setItem(key, doc.data().value);
                           }
-                      }).catch(err => console.log("Offline", err));
+                      });
                 }
             }, [key]);
 
@@ -98,219 +82,140 @@
                 const user = firebase.auth().currentUser;
                 if (user) {
                     db.collection('users').doc(user.uid).collection('data').doc(key)
-                      .set({ value: strVal, updated_at: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true })
-                      .catch(err => console.log("Salvo localmente.", err));
+                      .set({ value: strVal, updated_at: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 }
             }, [key, storedValue]);
 
             return [storedValue, setStoredValue];
         };
 
-        const formatDateBR = (dateString) => { if(!dateString) return '-'; const [y, m, d] = dateString.split('-'); return `${d}/${m}`; };
-        const getMonday = (d) => { d = new Date(d); var day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1); return new Date(d.setDate(diff)); }
-
-        // --- CONSTANTES ---
-        const MD_OPTIONS = ["-", "MD-5 (Recup.)", "MD-4 (Força)", "MD-3 (Resist.)", "MD-2 (Velocid.)", "MD-1 (Ativação)", "MD (JOGO)", "MD+1 (Recup.)", "MD+2 (Folga)"];
-        const activityOptions = ["Aquecimento", "Tático", "Técnico", "Físico", "Coletivo", "Bola Parada", "Recuperação", "Duelos"];
-        const locations = ["CT", "Estádio", "Hotel", "Academia", "Viagem"];
-        const positions = ["Goleiro", "Zagueiro", "Lat. Dir.", "Lat. Esq.", "Volante", "Meia", "Extremo", "Atacante"];
-        const tacticalSystems = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "5-3-2"];
-        const PREDEFINED_TAGS = [{ label: 'JOGO', color: 'bg-red-600' }, { label: 'TREINO', color: 'bg-green-600' }, { label: 'ACADEMIA', color: 'bg-yellow-500' }];
-        const TACTICAL_TAGS = [{ label: 'ORG. OF', color: 'bg-emerald-500' }, { label: 'ORG. DF', color: 'bg-rose-500' }, { label: 'TRANS. OF', color: 'bg-cyan-600' }];
-
-        // --- ÍCONES ---
-        const Icon = ({ name, size=18, className="" }) => {
+        // --- COMPONENTES DE ÍCONES ---
+        const Icon = ({ name, size=18 }) => {
             const icons = {
-                home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-                users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>,
-                list: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-                eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
-                save: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>,
-                check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>,
-                x: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-                plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                home: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>,
+                users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="7" r="4"/><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/></svg>,
+                eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/></svg>,
+                check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
             };
-            return <span className={className}>{icons[name] || null}</span>;
+            return <span>{icons[name]}</span>;
         };
 
-        // --- COMPONENTE DE LOGIN ---
-        const LoginScreen = ({ themeColor }) => {
-            const [email, setEmail] = useState('');
-            const [pass, setPass] = useState('');
-            const [loading, setLoading] = useState(false);
+        // --- ABA SCOUTING CORRIGIDA ---
+        const ScoutingView = ({ scoutingData, setScoutingData, scoutingHistory, setScoutingHistory, themeColor }) => {
+            const [showLoad, setShowLoad] = useState(false);
+            const data = scoutingData || {};
+            const history = Array.isArray(scoutingHistory) ? scoutingHistory : [];
 
-            const handleLogin = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                try { await firebase.auth().signInWithEmailAndPassword(email, pass); } 
-                catch (err) { alert('Erro ao entrar.'); setLoading(false); }
-            }
+            const updateField = (f, v) => setScoutingData({...data, [f]: v});
+            const updateLast5 = (index) => {
+                const current = [...(data.last5 || [null, null, null, null, null])];
+                const states = [null, 'W', 'D', 'L'];
+                current[index] = states[(states.indexOf(current[index]) + 1) % states.length];
+                setScoutingData({...data, last5: current});
+            };
+
+            const saveReport = () => {
+                if(!data.opponent) return alert("Informe o rival.");
+                const newReport = { ...data, id: data.id || Date.now() };
+                const newHistory = [...history];
+                const idx = newHistory.findIndex(h => h.id === newReport.id);
+                if(idx >= 0) newHistory[idx] = newReport; else newHistory.push(newReport);
+                setScoutingHistory(newHistory);
+                setScoutingData(newReport);
+                alert("Salvo!");
+            };
 
             return (
-                <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-900 p-4">
-                    <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
-                        <h2 className="text-2xl font-black text-center text-slate-800 mb-6 uppercase tracking-widest">Acesso ProCoach</h2>
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <input type="email" required className="w-full border-b-2 p-2 outline-none" value={email} onChange={e=>setEmail(e.target.value)} placeholder="E-mail" />
-                            <input type="password" required className="w-full border-b-2 p-2 outline-none" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Senha" />
-                            <button type="submit" className="w-full bg-blue-600 text-white font-black py-3 rounded-lg shadow-lg">ENTRAR</button>
-                        </form>
+                <div className="p-4 h-full overflow-y-auto">
+                    <div className="flex justify-between mb-4">
+                        <button onClick={()=>setShowLoad(true)} className="bg-white border px-3 py-1 rounded text-xs font-bold">HISTÓRICO</button>
+                        <button onClick={saveReport} className="bg-blue-600 text-white px-4 py-1 rounded text-xs font-bold">SALVAR</button>
                     </div>
+                    <div className="bg-white p-4 rounded-xl border mb-4">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase">Adversário</label>
+                        <input className="w-full border-b font-black text-lg outline-none uppercase" value={data.opponent||''} onChange={e=>updateField('opponent',e.target.value)}/>
+                        <div className="mt-4 flex gap-1 justify-center">
+                            { [0,1,2,3,4].map(i => (
+                                <button key={i} onClick={()=>updateLast5(i)} className={`w-8 h-8 rounded text-white font-bold ${(data.last5||[])[i]==='W'?'bg-green-500':(data.last5||[])[i]==='D'?'bg-slate-400':(data.last5||[])[i]==='L'?'bg-red-500':'bg-slate-200'}`}>{(data.last5||[])[i]||'-'}</button>
+                            )) }
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <textarea className="w-full h-32 border p-2 text-xs rounded" placeholder="Ataque do Rival..." value={data.offensive||''} onChange={e=>updateField('offensive',e.target.value)}/>
+                        <textarea className="w-full h-32 border p-2 text-xs rounded" placeholder="Defesa do Rival..." value={data.defensive||''} onChange={e=>updateField('defensive',e.target.value)}/>
+                    </div>
+                    {showLoad && (
+                        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4" onClick={()=>setShowLoad(false)}>
+                            <div className="bg-white p-4 rounded-xl w-full max-w-xs" onClick={e=>e.stopPropagation()}>
+                                <h3 className="font-bold border-b mb-2">Relatórios</h3>
+                                {history.map(h => <div key={h.id} className="p-2 border-b cursor-pointer text-sm" onClick={()=>{setScoutingData(h); setShowLoad(false);}}>{h.opponent}</div>)}
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
-        // --- ABA SCOUT (CORRIGIDA) ---
-        const ScoutingView = ({ themeColor, scoutingData, setScoutingData, scoutingHistory, setScoutingHistory }) => { 
-            const [toast, setToast] = useState(null); 
-            const [showLoad, setShowLoad] = useState(false); 
-            const [diagnosis, setDiagnosis] = useState({ title: '', text: '', s: [], w: [] }); 
-            
-            const data = scoutingData || {};
-            const history = Array.isArray(scoutingHistory) ? scoutingHistory : [];
-
-            useEffect(() => { 
-                if(!data.system) { setDiagnosis({ title: '', text: '', s: [], w: [] }); return; } 
-                const tacticalDB = { 
-                    "4-3-3": { text: "Ataque em amplitude. Deixa espaços nas costas dos laterais.", s: ["Pressão alta", "Pontas abertos"], w: ["Transição defensiva", "Costas dos laterais"] }, 
-                    "4-4-2": { text: "Linhas compactas. Difícil de penetrar.", s: ["Solidez", "Dupla de ataque"], w: ["Meio-campo inferior"] }
-                }; 
-                const advice = tacticalDB[data.system] || { text: "Sistema padrão.", s:[], w:[] }; 
-                setDiagnosis({ title: data.system, ...advice }); 
-            }, [data.system]);
-            
-            const updateField = (f, v) => setScoutingData({...data, [f]: v}); 
-            const updateLast5 = (index) => { 
-                const current = [...(data.last5 || [null, null, null, null, null])]; 
-                const states = [null, 'W', 'D', 'L'];
-                current[index] = states[(states.indexOf(current[index]) + 1) % states.length];
-                setScoutingData({...data, last5: current}); 
-            }; 
-
-            const saveReport = () => { 
-                if(!data.opponent) return alert("Digite o nome do adversário."); 
-                const newReport = { ...data, id: data.id || Date.now() }; 
-                const newHistory = [...history];
-                const index = newHistory.findIndex(h => h.id === newReport.id);
-                if(index >= 0) newHistory[index] = newReport; else newHistory.push(newReport);
-                setScoutingHistory(newHistory); 
-                setScoutingData(newReport);
-                setToast("Salvo!"); 
-                setTimeout(()=>setToast(null), 2000); 
-            }; 
-
-            return ( 
-                <div className="p-4 bg-slate-50 h-full overflow-y-auto animate-fade-in"> 
-                    {toast && <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full text-xs font-bold z-50 flex items-center gap-2"><Icon name="check"/> {toast}</div>} 
-                    
-                    <div className="flex justify-between mb-4 no-print">
-                        <button type="button" onClick={()=>setShowLoad(true)} className="bg-white border px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm">HISTÓRICO</button>
-                        <button type="button" onClick={saveReport} className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-lg">SALVAR SCOUT</button>
-                    </div> 
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> 
-                        <div className="bg-white p-4 rounded-xl shadow-sm border"> 
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Nome do Rival</label>
-                            <input className="w-full border-b-2 font-black text-lg outline-none uppercase" value={data.opponent||''} onChange={e=>updateField('opponent',e.target.value)}/>
-                            <div className="mt-4"><label className="text-[10px] font-bold text-slate-400 uppercase">Sistema</label><select className="w-full border-b-2 font-bold outline-none" value={data.system||''} onChange={e=>updateField('system',e.target.value)}><option value="">Selecione...</option>{tacticalSystems.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-                            <div className="mt-4 text-center">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Fase Recente</label>
-                                <div className="flex gap-1 justify-center">{[0,1,2,3,4].map(i => (<button key={i} onClick={()=>updateLast5(i)} className={`w-8 h-8 rounded text-xs font-bold text-white ${(data.last5||[])[i]==='W'?'bg-green-500':(data.last5||[])[i]==='D'?'bg-slate-400':(data.last5||[])[i]==='L'?'bg-red-500':'bg-slate-200'}`}>{(data.last5||[])[i]||'-'}</button>))}</div>
-                            </div>
-                        </div> 
-                        {diagnosis.title && (
-                            <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                                <h3 className="font-black text-blue-700 uppercase text-xs">Análise Tática: {diagnosis.title}</h3>
-                                <p className="text-xs text-slate-700 mt-2">{diagnosis.text}</p>
-                            </div>
-                        )}
-                    </div> 
-
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-white p-4 rounded-xl border">
-                            <label className="text-xs font-black text-slate-500 uppercase">Ataque do Rival</label>
-                            <textarea className="w-full h-24 text-xs p-2 bg-slate-50 rounded mt-2 outline-none" value={data.offensive||''} onChange={e=>updateField('offensive',e.target.value)}/>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl border">
-                            <label className="text-xs font-black text-slate-500 uppercase">Defesa do Rival</label>
-                            <textarea className="w-full h-24 text-xs p-2 bg-slate-50 rounded mt-2 outline-none" value={data.defensive||''} onChange={e=>updateField('defensive',e.target.value)}/>
-                        </div>
-                    </div>
-
-                    {showLoad && (
-                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setShowLoad(false)}>
-                            <div className="bg-white rounded-xl w-full max-w-sm p-4" onClick={e=>e.stopPropagation()}>
-                                <h3 className="font-bold border-b pb-2 mb-2 uppercase text-sm">Relatórios Salvos</h3>
-                                <div className="max-h-60 overflow-y-auto">
-                                    {history.map(h => (
-                                        <div key={h.id} className="p-2 hover:bg-slate-100 rounded cursor-pointer border-b" onClick={()=>{setScoutingData(h); setShowLoad(false);}}>
-                                            <div className="font-bold text-xs">{h.opponent}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div> 
-            ); 
-        };
-
-        // --- APP PRINCIPAL ---
-        const ProCoachApp = () => {
+        // --- COMPONENTE PRINCIPAL ---
+        const MainApp = () => {
             const [user, setUser] = useState(null);
+            const [loadingAuth, setLoadingAuth] = useState(true);
             const [tab, setTab] = useState('dashboard');
             
             const [themeColor, setThemeColor] = useFirebaseStorage('pc_theme', '#1e3a8a');
-            const [players, setPlayers] = useFirebaseStorage('pc_players', [{name: "Jogador 1", pos: 'Zagueiro'}]);
+            const [players, setPlayers] = useFirebaseStorage('pc_players', [{name: "Atleta 1", pos: 'Goleiro'}]);
             const [scoutingData, setScoutingData] = useFirebaseStorage('pc_scouting', {});
             const [scoutingHistory, setScoutingHistory] = useFirebaseStorage('pc_scouting_history', []);
 
             useEffect(() => {
-                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
                     setUser(u);
-                    document.getElementById('loading').style.display = 'none';
+                    setLoadingAuth(false);
+                    const loader = document.getElementById('loading');
+                    if(loader) loader.style.display = 'none';
                 });
                 return () => unsubscribe();
             }, []);
 
-            if (!user) return <LoginScreen themeColor="#1e3a8a" />;
+            if (loadingAuth) return null;
+            if (!user) return (
+                <div className="h-screen flex items-center justify-center bg-slate-900 p-4">
+                    <form className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm" onSubmit={async (e)=>{
+                        e.preventDefault();
+                        try { await firebase.auth().signInWithEmailAndPassword(e.target.email.value, e.target.pass.value); } catch { alert("Erro!"); }
+                    }}>
+                        <h2 className="text-xl font-black text-center mb-6">PROCOACH LOGIN</h2>
+                        <input name="email" type="email" placeholder="E-mail" className="w-full border-b p-2 mb-4 outline-none" required/>
+                        <input name="pass" type="password" placeholder="Senha" className="w-full border-b p-2 mb-6 outline-none" required/>
+                        <button className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-lg">ENTRAR</button>
+                    </form>
+                </div>
+            );
 
             return (
-                <div className="flex flex-col h-full">
-                    {/* Header */}
+                <div className="flex flex-col h-full bg-slate-100">
                     <header className="bg-white border-b p-4 flex justify-between items-center shadow-sm">
                         <div className="font-black text-xl italic" style={{color: themeColor}}>PROCOACH <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded not-italic">V2106</span></div>
                         <button onClick={()=>firebase.auth().signOut()} className="text-[10px] font-bold text-red-500 uppercase">Sair</button>
                     </header>
 
-                    {/* Nav */}
-                    <nav className="bg-slate-200 p-1 flex overflow-x-auto gap-1">
-                        <button onClick={()=>setTab('dashboard')} className={`flex-1 px-4 py-2 rounded text-[10px] font-bold ${tab==='dashboard'?'bg-blue-600 text-white':'text-slate-500'}`}>INÍCIO</button>
-                        <button onClick={()=>setTab('squad')} className={`flex-1 px-4 py-2 rounded text-[10px] font-bold ${tab==='squad'?'bg-blue-600 text-white':'text-slate-500'}`}>PLANTEL</button>
-                        <button onClick={()=>setTab('scouting')} className={`flex-1 px-4 py-2 rounded text-[10px] font-bold ${tab==='scouting'?'bg-blue-600 text-white':'text-slate-500'}`}>SCOUTING</button>
+                    <nav className="bg-slate-200 p-1 flex gap-1">
+                        <button onClick={()=>setTab('dashboard')} className={`flex-1 py-2 rounded text-[10px] font-bold ${tab==='dashboard'?'bg-blue-600 text-white':'text-slate-500'}`}>INÍCIO</button>
+                        <button onClick={()=>setTab('squad')} className={`flex-1 py-2 rounded text-[10px] font-bold ${tab==='squad'?'bg-blue-600 text-white':'text-slate-500'}`}>PLANTEL</button>
+                        <button onClick={()=>setTab('scouting')} className={`flex-1 py-2 rounded text-[10px] font-bold ${tab==='scouting'?'bg-blue-600 text-white':'text-slate-500'}`}>SCOUTING</button>
                     </nav>
 
-                    {/* Main Content */}
                     <main className="flex-1 overflow-hidden">
-                        {tab === 'dashboard' && (
-                            <div className="p-8 text-center flex flex-col items-center justify-center h-full text-slate-400">
-                                <Icon name="home" size={48} className="mb-4 opacity-20"/>
-                                <h1 className="text-xl font-black text-slate-800">Bem-vindo, Professor</h1>
-                                <p className="text-xs uppercase font-bold tracking-widest mt-2">Escolha uma aba para começar</p>
-                            </div>
-                        )}
+                        {tab === 'dashboard' && <div className="h-full flex flex-col items-center justify-center text-slate-400 font-bold uppercase text-xs tracking-widest"><Icon name="home" size={48}/><p className="mt-4">Seja bem-vindo, Adriano Cabeça</p></div>}
                         {tab === 'squad' && (
                             <div className="p-4 h-full overflow-y-auto">
-                                <button onClick={()=>setPlayers([...players, {name: 'Novo Jogador', pos: 'Zagueiro'}])} className="bg-blue-600 text-white px-4 py-2 rounded mb-4 font-bold text-xs">+ JOGADOR</button>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {players.map((p,i)=>(
-                                        <div key={i} className="bg-white p-3 rounded-lg border shadow-sm">
-                                            <input className="font-bold text-sm w-full outline-none" value={p.name} onChange={e=>{const n=[...players]; n[i].name=e.target.value; setPlayers(n);}}/>
-                                            <div className="text-[10px] text-slate-400 font-bold uppercase">{p.pos}</div>
-                                        </div>
-                                    ))}
-                                </div>
+                                <button onClick={()=>setPlayers([...players, {name: 'Novo Atleta', pos: 'Meia'}])} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-xs mb-4 shadow">+ ADICIONAR ATLETA</button>
+                                {players.map((p,i)=>(
+                                    <div key={i} className="bg-white p-3 rounded-lg border mb-2 flex justify-between items-center">
+                                        <input className="font-bold text-sm bg-transparent outline-none" value={p.name} onChange={e=>{const n=[...players]; n[i].name=e.target.value; setPlayers(n);}}/>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{p.pos}</span>
+                                    </div>
+                                ))}
                             </div>
                         )}
                         {tab === 'scouting' && <ScoutingView scoutingData={scoutingData} setScoutingData={setScoutingData} scoutingHistory={scoutingHistory} setScoutingHistory={setScoutingHistory} themeColor={themeColor} />}
@@ -320,7 +225,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ProCoachApp />);
+        root.render(<MainApp />);
     </script>
 </body>
 </html>
