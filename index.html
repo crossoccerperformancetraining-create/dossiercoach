@@ -142,6 +142,7 @@
         const activityOptions = ["Aquecimento", "Tático", "Técnico", "Físico", "Coletivo", "Bola Parada", "Recuperação", "Duelos", "Complemento OF", "Complemento DF", "Mini Jogo"];
         const locations = ["CT", "Estádio", "Hotel", "Academia", "Viagem", "Concentração"];
         const positions = ["Goleiro", "Zagueiro", "Lat. Dir.", "Lat. Esq.", "Volante", "Meia", "Extremo", "Atacante"];
+        const tacticalSystems = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "5-3-2", "4-1-4-1", "4-5-1"];
         const timeOptions = Array.from({length: 26}, (_, i) => (i + 1) * 5);
         const PREDEFINED_TAGS = [{ label: 'JOGO', color: 'bg-red-600' }, { label: 'TREINO', color: 'bg-green-600' }, { label: 'RECUPERAÇÃO', color: 'bg-blue-500' }, { label: 'ACADEMIA', color: 'bg-yellow-500' }, { label: 'VÍDEO', color: 'bg-purple-600' }, { label: 'FOLGA', color: 'bg-slate-400' }];
         const TACTICAL_TAGS = [{ label: 'ORG. OF', color: 'bg-emerald-500' }, { label: 'ORG. DF', color: 'bg-rose-500' }, { label: 'TRANS. OF', color: 'bg-cyan-600' }, { label: 'TRANS. DF', color: 'bg-orange-600' }, { label: 'ABP OF', color: 'bg-teal-600' }, { label: 'ABP DF', color: 'bg-red-700' }];
@@ -368,7 +369,7 @@
             ); 
         };
 
-        // --- MODAL DE ESTATÍSTICA ---
+        // --- MODAL DE ESTATÍSTICA (CORRIGIDO PARA NÃO SAIR DO APP) ---
         const SeasonStatsModal = ({ show, onClose, stats, setStats, themeColor }) => {
             if (!show) return null;
             const updateStat = (type, field, val) => { const n = { ...stats }; n[type][field] = parseInt(val) || 0; setStats(n); };
@@ -478,7 +479,7 @@
             );
         };
 
-        // --- MODAL DE ANÁLISE ---
+        // --- OUTROS MODAIS ---
         const AnalysisModal = ({ show, onClose, themeColor, players, history, currentDate }) => {
             if (!show) return null;
             const sessionData = (history && history[currentDate]) || { ratings: {} };
@@ -586,7 +587,7 @@
                         </div>
                     </div> 
                     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"> 
-                        {players.map((p, i) => ( <div key={i} onClick={()=>setViewProfile(i)} className="print-card bg-white rounded-xl shadow border border-slate-100 p-3 flex flex-col items-center gap-1 relative group hover:shadow-lg transition-all cursor-pointer"> {p.injured && <div className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow z-10 animate-pulse no-print">NO DM</div>} {p.suspended && !p.injured && <div className="absolute top-2 left-2 bg-yellow-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow z-10 no-print">SUSPENSO</div>} <div className="absolute top-2 left-2 flex flex-col gap-1"> {!p.injured && !p.suspended && (p.attributes||[]).includes('PENALTI') && <div className="bg-blue-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold" title="Pênalti">P</div>} {!p.injured && !p.suspended && (p.attributes||[]).includes('FALTA') && <div className="bg-yellow-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold" title="Falta">F</div>} {!p.injured && !p.suspended && (p.attributes||[]).includes('ESCANTEIO') && <div className="bg-purple-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold" title="Escanteio">E</div>} </div> <button type="button" onClick={(e)=>{e.stopPropagation(); deleteP(i)}} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity no-print"><Icon name="trash" size={16}/></button> <div className="w-16 h-16 rounded-full bg-slate-100 overflow-hidden relative border-2 group/img mt-2" style={{borderColor: p.injured ? '#ef4444' : p.suspended ? '#eab308' : themeColor}}> {p.image ? <img src={p.image} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Icon name="users" size={32}/></div>} <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 opacity-0 group-hover/img:opacity-100 transition-opacity no-print" onClick={e=>e.stopPropagation()}><button type="button" onClick={()=>handleImageUrl(i)} className="text-white hover:text-blue-400"><Icon name="link" size={14}/></button></div> </div> <input className="text-center font-bold text-slate-700 bg-transparent border-b border-transparent focus:border-blue-300 outline-none w-full" value={p.name} onClick={e=>e.stopPropagation()} onChange={e=>updateName(i,e.target.value)} placeholder="Nome do Atleta"/> <div className="text-[10px] text-slate-500 font-bold uppercase mt-1 flex gap-2 items-center"><span>{p.pos || 'POS'}</span><span>|</span><span>{p.age ? `${p.age}a` : '-'}</span><span>|</span><span className="bg-slate-100 px-1 rounded">{p.foot==='Canhoto'?'CAN':p.foot==='Ambidestro'?'AMB':'DES'}</span></div> </div> ))} 
+                        {players.map((p, i) => ( <div key={i} onClick={()=>setViewProfile(i)} className="print-card bg-white rounded-xl shadow border border-slate-100 p-3 flex flex-col items-center gap-1 relative group hover:shadow-lg transition-all cursor-pointer"> {p.injured && <div className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow z-10 animate-pulse no-print">NO DM</div>} {p.suspended && !p.injured && <div className="absolute top-2 left-2 bg-yellow-500 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow z-10 no-print">SUSPENSO</div>} <div className="absolute top-2 left-2 flex flex-col gap-1"> {!p.injured && !p.suspended && (p.attributes||[]).includes('PENALTI') && <div className="bg-blue-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold" title="Pênalti">P</div>} {!p.injured && !p.suspended && (p.attributes||[]).includes('FALTA') && <div className="bg-yellow-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold" title="Falta">F</div>} {!p.injured && !p.suspended && (p.attributes||[]).includes('ESCANTEIO') && <div className="bg-purple-500 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold" title="Escanteio">E</div>} </div> <button type="button" onClick={(e)=>{e.stopPropagation(); deleteP(i)}} className="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity no-print"><Icon name="trash" size={16}/></button> <div className="w-16 h-16 rounded-full bg-slate-100 overflow-hidden relative border-2 group/img mt-2" style={{borderColor: p.injured ? '#ef4444' : p.suspended ? '#eab308' : themeColor}}> {p.image ? <img src={p.image} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-slate-300"><Icon name="users" size={32}/></div>} <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 opacity-0 group-hover/img:opacity-100 transition-opacity no-print" onClick={e=>e.stopPropagation()}><button type="button" onClick={()=>handleImageUrl(i)} className="text-white hover:text-blue-400"><Icon name="link" size={14}/></button></div> </div> <input className="text-center font-bold text-slate-700 bg-transparent border-b border-transparent focus:border-blue-300 outline-none w-full" value={p.name} onClick={e=>e.stopPropagation()} onChange={e=>updateName(i,e.target.value)} placeholder="Nome do Atleta"/> <div className="text-[10px] text-slate-500 font-bold uppercase mt-1 flex gap-2 items-center"><span>{p.pos || 'POS'}</span><span>|</span><span>{p.age ? `${p.age}a` : '-'}</span><span>|</span><span className="bg-slate-100 px-1 rounded text-[8px] font-black">{p.foot==='Canhoto'?'CAN':p.foot==='Ambidestro'?'AMB':'DES'}</span></div> </div> ))} 
                         <button type="button" onClick={addP} className="bg-white rounded-xl shadow border border-dashed border-slate-300 p-4 flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-blue-500 hover:border-blue-500 transition-all cursor-pointer h-32 no-print"><Icon name="plus" size={32}/><span className="font-bold text-sm">Adicionar Atleta</span></button> 
                     </div> 
                 </div> 
@@ -777,11 +778,168 @@
             ); 
         };
 
-        const ScoutingView = ({ themeColor, scoutingData, setScoutingData, scoutingHistory, setScoutingHistory }) => { const [toast, setToast] = useState(null); const [showLoad, setShowLoad] = useState(false); const [diagnosis, setDiagnosis] = useState({ title: '', text: '', strengths: [], weaknesses: [] }); const [contextAnalysis, setContextAnalysis] = useState(null);
-            useEffect(() => { if(!scoutingData.system) { setDiagnosis({ title: '', text: '', strengths: [], weaknesses: [] }); return; } const tacticalDB = { "4-3-3": { text: "Formação agressiva pelos lados. Deixa espaços nas costas dos laterais.", s: ["Amplitude ofensiva", "Pressão alta", "Triangulações laterais"], w: ["Costas dos laterais", "Espaço entre linhas se os médios subirem", "Contra-ataque central"] }, "4-4-2": { text: "Duas linhas de 4 sólidas. Difícil de penetrar, mas pode perder o meio-campo (2v3).", s: ["Defesa compacta", "Dupla de ataque perigosa", "Coberturas laterais"], w: ["Inferioridade numérica no meio", "Espaço entre a defesa e o meio", "Pouca criatividade central"] }, "3-5-2": { text: "Povoa o meio-campo. Alas são fundamentais no ataque e defesa.", s: ["Superioridade no meio", "Alas ofensivos", "Defesa com 3 zagueiros"], w: ["Costas dos alas", "Apenas 1 jogador em cada corredor lateral", "Transição lenta"] }, "4-2-3-1": { text: "Equilibrada. O Camisa 10 é o cérebro. Volantes protegem a zaga.", s: ["Meia central livre (10)", "Laterais apoiam com segurança", "Equilíbrio defensivo"], w: ["Se o 10 for marcado, time trava", "Espaço se os volantes saírem para caça", "Isolamento do atacante"] }, "5-3-2": { text: "Bloco baixo e contra-ataque. Difícil de fazer gol, perigoso na transição.", s: ["Defesa muito sólida", "Contra-ataque rápido", "Bola aérea defensiva"], w: ["Pouca posse de bola", "Dificuldade em propor jogo", "Dependência dos atacantes"] }, "3-4-3": { text: "Muito ofensiva. Riscos altos na defesa se a pressão falhar.", s: ["Ataque com 3 homens", "Pressão pós-perda intensa", "Laterais viram alas"], w: ["Defesa exposta nos lados", "Exige físico perfeito", "Espaços enormes nos contra-ataques"] } }; const advice = tacticalDB[scoutingData.system] || { text: "Sistema padrão.", s:[], w:[] }; setDiagnosis({ title: scoutingData.system, ...advice }); }, [scoutingData.system]);
-            useEffect(() => { const results = scoutingData.last5 || [null,null,null,null,null]; const validResults = results.filter(r => r !== null); if(validResults.length === 0) { setContextAnalysis(null); return; } let points = 0; validResults.forEach(r => { if(r==='W') points+=3; if(r==='D') points+=1; }); const maxPoints = validResults.length * 3; const percentage = points / maxPoints; let status = ""; let color = ""; if (percentage >= 0.8) { status = "EM ALTA (Momentum)"; color = "text-green-600"; } else if (percentage >= 0.5) { status = "REGULAR (Oscilando)"; color = "text-yellow-600"; } else { status = "EM BAIXA (Crise)"; color = "text-red-600"; } const isHome = scoutingData.isHome; let advice = ""; if (percentage >= 0.8 && isHome) advice = "⚠️ FORTALEZA: Eles estão voando e jogam em casa. Jogue fechado e explore o erro."; else if (percentage >= 0.8 && !isHome) advice = "⚠️ PERIGO: Mesmo fora, eles estão confiantes. Cuidado com o salto alto."; else if (percentage < 0.4 && isHome) advice = "🎯 OPORTUNIDADE: Estão mal, mas a torcida pressiona. Se fizermos o 1º gol, eles desmoronam."; else if (percentage < 0.4 && !isHome) advice = "🎯 PRESA FÁCIL: Estão em crise e longe de casa. Pressione alto desde o início!"; else advice = "Jogo equilibrado. Detalhes definirão o resultado."; setContextAnalysis({ status, color, advice }); }, [scoutingData.last5, scoutingData.isHome]);
-            const updateField = (f, v) => setScoutingData({...scoutingData, [f]: v}); const updateList = (t, i, v) => { const l = [...(scoutingData[t] || Array(4).fill(''))]; l[i] = v; setScoutingData({...scoutingData, [t]: l}); }; const updateLast5 = (index, result) => { const current = scoutingData.last5 || [null, null, null, null, null]; current[index] = result; setScoutingData({...scoutingData, last5: current}); }; const save = () => { const r = { ...scoutingData, id: scoutingData.id || Date.now() }; const idx = scoutingHistory.findIndex(x => x.id === r.id); const h = [...scoutingHistory]; if(idx >= 0) h[idx] = r; else h.push(r); setScoutingHistory(h); setScoutingData(r); setToast("Salvo!"); setTimeout(()=>setToast(null), 2000); }; 
-            return ( <div className="p-4 bg-slate-50 h-full overflow-y-auto animate-fade-in relative"> {toast && <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl z-50 toast-enter flex items-center gap-2"><Icon name="check"/> {toast}</div>} {showLoad && <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setShowLoad(false)}><div className="bg-white rounded-xl w-full max-w-sm p-4" onClick={e=>e.stopPropagation()}><h3 className="font-bold mb-4">Relatórios</h3><div className="space-y-2">{scoutingHistory.map(h=><div key={h.id} className="flex justify-between border p-2 rounded"><span className="font-bold">{h.opponent}</span><button type="button" onClick={()=>{setScoutingData(h); setShowLoad(false)}} className="text-blue-500">Abrir</button></div>)}</div></div></div>} <div className="flex justify-between mb-4 no-print"><div className="flex gap-2"><button type="button" onClick={()=>setScoutingData({})} className="bg-white border px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-slate-50"><Icon name="plus"/> NOVO</button><button type="button" onClick={()=>setShowLoad(true)} className="bg-white border px-3 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-slate-50"><Icon name="list"/> GERENCIAR</button></div><button type="button" onClick={save} className="bg-green-500 text-white px-4 py-1 rounded text-xs font-bold hover:bg-green-600 shadow flex items-center gap-1"><Icon name="save"/> SALVAR</button></div> <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> <div className="mb-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200"> <div className="grid grid-cols-2 gap-4"><div><label className="text-xs font-bold text-slate-500 uppercase">Adversário</label><input className="w-full border-b font-black text-xl outline-none bg-transparent" placeholder="Nome" value={scoutingData.opponent||''} onChange={e=>updateField('opponent',e.target.value)}/></div> <div><label className="text-xs font-bold text-slate-500 uppercase">Sistema Tático</label><select className="w-full border-b font-bold outline-none bg-white py-1" value={scoutingData.system||''} onChange={e=>updateField('system',e.target.value)}><option value="">Selecione...</option>{tacticalSystems.map(s=><option key={s} value={s}>{s}</option>)}</select></div></div> <div className="mt-4 grid grid-cols-2 gap-4"><div><label className="text-xs font-bold text-slate-500 uppercase">Data do Jogo</label><input type="date" className="w-full border-b text-xs outline-none py-1 bg-transparent" value={scoutingData.date||''} onChange={e=>updateField('date',e.target.value)}/></div><div><label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Fase (Últimos 5)</label><div className="flex gap-1">{[0,1,2,3,4].map(i => { const val = (scoutingData.last5 || [])[i]; return ( <button type="button" key={i} onClick={() => updateLast5(i, val === 'W' ? 'D' : val === 'D' ? 'L' : 'W')} className={`w-6 h-6 rounded-full text-[10px] font-bold text-white flex items-center justify-center transition-all hover:scale-110 ${val === 'W' ? 'bg-green-500' : val === 'D' ? 'bg-slate-400' : val === 'L' ? 'bg-red-500' : 'bg-slate-200 text-slate-400'}`}>{val || '-'}</button> ) })}</div></div></div> <div className="mt-4 flex items-center gap-2"><label className="text-xs font-bold text-slate-500 uppercase">Mando de Campo (Adversário):</label><button type="button" onClick={()=>updateField('isHome', !scoutingData.isHome)} className={`px-3 py-1 rounded text-xs font-bold transition-colors ${scoutingData.isHome ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>{scoutingData.isHome ? 'JOGA EM CASA' : 'JOGA FORA'}</button></div> <div className="mt-4"><label className="text-xs font-bold text-slate-500 uppercase">Escudo (URL)</label><input className="w-full border-b text-xs outline-none text-blue-500 bg-transparent" placeholder="https://..." value={scoutingData.logo||''} onChange={e=>updateField('logo',e.target.value)}/></div> </div> <div className="space-y-4"> {diagnosis.title && (<div className="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-blue-500"><div className="flex items-start gap-3"><div className="text-blue-500 bg-blue-50 p-2 rounded-full"><Icon name="bulb" size={20}/></div><div><div className="text-[10px] font-bold text-blue-400 uppercase">DIAGNÓSTICO TÁTICO</div><div className="text-xs font-bold text-slate-700 mb-2">{diagnosis.text}</div><div className="grid grid-cols-2 gap-2"><div className="bg-green-50 p-2 rounded border border-green-100"><div className="text-[9px] font-bold text-green-700 uppercase mb-1">Pontos Fortes</div><ul className="list-disc pl-3 text-[9px] text-green-800">{diagnosis.s.map(s=><li key={s}>{s}</li>)}</ul></div><div className="bg-red-50 p-2 rounded border border-red-100"><div className="text-[9px] font-bold text-red-700 uppercase mb-1">Pontos Fracos</div><ul className="list-disc pl-3 text-[9px] text-red-800">{diagnosis.w.map(w=><li key={w}>{w}</li>)}</ul></div></div></div></div></div>)} {contextAnalysis && (<div className={`p-4 rounded-xl shadow-sm border border-l-4 flex items-start gap-3 ${contextAnalysis.status.includes('ALTA') ? 'bg-red-50 border-red-200 border-l-red-500' : 'bg-yellow-50 border-yellow-200 border-l-yellow-500'}`}><div className="text-slate-700 bg-white/50 p-2 rounded-full"><Icon name="alert" size={20}/></div><div><div className="text-[10px] font-bold opacity-70 uppercase">MOMENTO DA EQUIPE</div><div className={`text-xs font-black uppercase mb-1 ${contextAnalysis.color}`}>{contextAnalysis.status}</div><div className="text-xs font-bold text-slate-700 italic">"{contextAnalysis.advice}"</div></div></div>)} </div> </div> <div className="grid grid-cols-2 gap-4 mt-4 mb-4"><div className="bg-white p-3 rounded-xl border"><div className="text-xs font-bold text-green-600 uppercase mb-2">Pontos Fortes (Observados)</div>{[0,1,2].map(i=><input key={i} className="w-full border-b text-xs py-1 mb-1 outline-none bg-transparent" placeholder="+" value={scoutingData.strengths?.[i]||''} onChange={e=>updateList('strengths',i,e.target.value)}/>)}</div><div className="bg-white p-3 rounded-xl border"><div className="text-xs font-bold text-red-600 uppercase mb-2">Pontos Fracos (Observados)</div>{[0,1,2].map(i=><input key={i} className="w-full border-b text-xs py-1 mb-1 outline-none bg-transparent" placeholder="-" value={scoutingData.weaknesses?.[i]||''} onChange={e=>updateList('weaknesses',i,e.target.value)}/>)}</div></div> <div className="space-y-4">{['Organização Ofensiva', 'Organização Defensiva', 'Bolas Paradas'].map((label, i) => { const field = i===0?'offensive':i===1?'defensive':'setPieces'; return (<div key={field} className="bg-white p-3 rounded-xl border shadow-sm"><label className="text-xs font-bold text-slate-500 uppercase">{label}</label><textarea className="w-full h-16 text-xs p-2 border rounded mt-1 resize-none outline-none bg-transparent" value={scoutingData[field]||''} onChange={e=>updateField(field,e.target.value)}></textarea></div>); })}</div> </div> ); };
+        const ScoutingView = ({ themeColor, scoutingData, setScoutingData, scoutingHistory, setScoutingHistory }) => { 
+            const [toast, setToast] = useState(null); 
+            const [showLoad, setShowLoad] = useState(false); 
+            const [diagnosis, setDiagnosis] = useState({ title: '', text: '', s: [], w: [] }); 
+            const [contextAnalysis, setContextAnalysis] = useState(null);
+            
+            const data = scoutingData || {};
+            const history = Array.isArray(scoutingHistory) ? scoutingHistory : [];
+
+            useEffect(() => { 
+                if(!data.system) { setDiagnosis({ title: '', text: '', s: [], w: [] }); return; } 
+                const tacticalDB = { 
+                    "4-3-3": { text: "Formação agressiva pelos lados. Deixa espaços nas costas dos laterais.", s: ["Amplitude ofensiva", "Pressão alta", "Triangulações laterais"], w: ["Costas dos laterais", "Espaço entre linhas se os médios subirem", "Contra-ataque central"] }, 
+                    "4-4-2": { text: "Duas linhas de 4 sólidas. Difícil de penetrar, mas pode perder o meio-campo (2v3).", s: ["Defesa compacta", "Dupla de ataque perigosa", "Coberturas laterais"], w: ["Inferioridade numérica no meio", "Espaço entre a defesa e o meio", "Pouca criatividade central"] }, 
+                    "3-5-2": { text: "Povoa o meio-campo. Alas são fundamentais no ataque e defesa.", s: ["Superioridade no meio", "Alas ofensivos", "Defesa com 3 zagueiros"], w: ["Costas dos alas", "Apenas 1 jogador em cada corredor lateral", "Transição lenta"] }, 
+                    "4-2-3-1": { text: "Equilibrada. O Camisa 10 é o cérebro. Volantes protegem a zaga.", s: ["Meia central livre (10)", "Laterais apoiam com segurança", "Equilíbrio defensivo"], w: ["Se o 10 for marcado, time trava", "Espaço se os volantes saírem para caça", "Isolamento do atacante"] }, 
+                    "5-3-2": { text: "Bloco baixo e contra-ataque. Difícil de fazer gol, perigoso na transição.", s: ["Defesa muito sólida", "Contra-ataque rápido", "Bola aérea defensiva"], w: ["Pouca posse de bola", "Dificuldade em propor jogo", "Dependência dos atacantes"] }, 
+                    "3-4-3": { text: "Muito ofensiva. Riscos altos na defesa se a pressão falhar.", s: ["Ataque com 3 homens", "Pressão pós-perda intensa", "Laterais viram alas"], w: ["Defesa exposta nos lados", "Exige físico perfeito", "Espaços enormes nos contra-ataques"] } 
+                }; 
+                const advice = tacticalDB[data.system] || { text: "Sistema padrão.", s:[], w:[] }; 
+                setDiagnosis({ title: data.system, ...advice }); 
+            }, [data.system]);
+            
+            useEffect(() => { 
+                const results = data.last5 || [null,null,null,null,null]; 
+                const validResults = results.filter(r => r !== null); 
+                if(validResults.length === 0) { setContextAnalysis(null); return; } 
+                let points = 0; 
+                validResults.forEach(r => { if(r==='W') points+=3; if(r==='D') points+=1; }); 
+                const maxPoints = validResults.length * 3; 
+                const percentage = points / maxPoints; 
+                let status = ""; let color = ""; 
+                if (percentage >= 0.8) { status = "EM ALTA (Momentum)"; color = "text-green-600"; } 
+                else if (percentage >= 0.5) { status = "REGULAR (Oscilando)"; color = "text-yellow-600"; } 
+                else { status = "EM BAIXA (Crise)"; color = "text-red-600"; } 
+                const isHome = data.isHome; 
+                let advice = ""; 
+                if (percentage >= 0.8 && isHome) advice = "⚠️ FORTALEZA: Eles estão voando e jogam em casa. Jogue fechado e explore o erro."; 
+                else if (percentage >= 0.8 && !isHome) advice = "⚠️ PERIGO: Mesmo fora, eles estão confiantes. Cuidado com o salto alto."; 
+                else if (percentage < 0.4 && isHome) advice = "🎯 OPORTUNIDADE: Estão mal, mas a torcida pressiona. Se fizermos o 1º gol, eles desmoronam."; 
+                else if (percentage < 0.4 && !isHome) advice = "🎯 PRESA FÁCIL: Estão em crise e longe de casa. Pressione alto desde o início!"; 
+                else advice = "Jogo equilibrado. Detalhes definirão o resultado."; 
+                setContextAnalysis({ status, color, advice }); 
+            }, [data.last5, data.isHome]);
+            
+            const updateField = (f, v) => setScoutingData({...data, [f]: v}); 
+            const updateList = (t, i, v) => { const l = [...(data[t] || Array(4).fill(''))]; l[i] = v; setScoutingData({...data, [t]: l}); }; 
+            const updateLast5 = (index, result) => { const current = data.last5 || [null, null, null, null, null]; current[index] = result; setScoutingData({...data, last5: current}); }; 
+            const save = () => { const r = { ...data, id: data.id || Date.now() }; const idx = history.findIndex(x => x.id === r.id); const h = [...history]; if(idx >= 0) h[idx] = r; else h.push(r); setScoutingHistory(h); setScoutingData(r); setToast("Salvo!"); setTimeout(()=>setToast(null), 2000); }; 
+
+            const loadReport = (h) => {
+                setScoutingData(h);
+                setShowLoad(false);
+            }
+            
+            const deleteReport = (id, e) => {
+                e.stopPropagation();
+                if(window.confirm("Apagar relatório?")) {
+                    setScoutingHistory(history.filter(x => x.id !== id));
+                }
+            }
+
+            return ( 
+                <div className="p-4 bg-slate-50 h-full overflow-y-auto animate-fade-in relative"> 
+                    {toast && <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl z-50 toast-enter flex items-center gap-2"><Icon name="check"/> {toast}</div>} 
+                    {showLoad && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setShowLoad(false)}>
+                            <div className="bg-white rounded-xl w-full max-w-sm p-4 shadow-2xl" onClick={e=>e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-4 border-b pb-2">
+                                    <h3 className="font-bold text-slate-800">Relatórios Salvos</h3>
+                                    <button type="button" onClick={()=>setShowLoad(false)}><Icon name="x"/></button>
+                                </div>
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    {history.length > 0 ? history.map(h => (
+                                        <div key={h.id} className="flex justify-between items-center border border-slate-200 p-2 rounded-lg bg-slate-50 cursor-pointer hover:border-blue-500" onClick={()=>loadReport(h)}>
+                                            <div>
+                                                <div className="font-bold text-sm text-slate-800 uppercase">{h.opponent || 'Sem Nome'}</div>
+                                                <div className="text-[10px] text-slate-500 font-bold">{h.date ? formatDateBR(h.date) : 'Sem data'} • {h.system || '-'}</div>
+                                            </div>
+                                            <button type="button" onClick={(e)=>deleteReport(h.id, e)} className="text-red-400 hover:text-red-600 p-2"><Icon name="trash" size={14}/></button>
+                                        </div>
+                                    )) : <div className="text-center text-xs text-slate-400 py-4">Nenhum relatório salvo.</div>}
+                                </div>
+                            </div>
+                        </div>
+                    )} 
+                    
+                    <div className="flex justify-between mb-4 no-print"><div className="flex gap-2"><button type="button" onClick={()=>setScoutingData({})} className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-slate-50 shadow-sm text-slate-700 transition"><Icon name="plus"/> NOVO</button><button type="button" onClick={()=>setShowLoad(true)} className="bg-white border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-slate-50 shadow-sm text-slate-700 transition"><Icon name="list"/> GERENCIAR</button></div><button type="button" onClick={save} className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 shadow-lg flex items-center gap-1 transition"><Icon name="save"/> SALVAR</button></div> 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> 
+                        <div className="mb-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200"> 
+                            <div className="grid grid-cols-2 gap-4"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Adversário</label><input className="w-full border-b-2 border-slate-100 font-black text-xl outline-none bg-transparent focus:border-blue-500 transition text-slate-800 uppercase" placeholder="NOME DO CLUBE" value={data.opponent||''} onChange={e=>updateField('opponent',e.target.value)}/></div> <div><label className="text-[10px] font-bold text-slate-400 uppercase">Sistema Tático</label><select className="w-full border-b-2 border-slate-100 font-bold outline-none bg-transparent py-1 text-blue-600 focus:border-blue-500 transition" value={data.system||''} onChange={e=>updateField('system',e.target.value)}><option value="">Selecione...</option>{tacticalSystems.map(s=><option key={s} value={s}>{s}</option>)}</select></div></div> 
+                            <div className="mt-6 grid grid-cols-2 gap-4"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Data do Jogo</label><input type="date" className="w-full border-b-2 border-slate-100 text-sm font-bold outline-none py-1 bg-transparent focus:border-blue-500 text-slate-700" value={data.date||''} onChange={e=>updateField('date',e.target.value)}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Fase (Últimos 5)</label><div className="flex gap-1">{[0,1,2,3,4].map(i => { const val = (data.last5 || [])[i]; return ( <button type="button" key={i} onClick={() => updateLast5(i, val === 'W' ? 'D' : val === 'D' ? 'L' : val === 'L' ? null : 'W')} className={`w-8 h-8 rounded-lg text-xs font-black text-white flex items-center justify-center transition-all hover:opacity-80 shadow-sm ${val === 'W' ? 'bg-green-500' : val === 'D' ? 'bg-slate-400' : val === 'L' ? 'bg-red-500' : 'bg-slate-100 border border-slate-200 text-slate-300'}`}>{val || '-'}</button> ) })}</div></div></div> 
+                            <div className="mt-6 flex items-center gap-4"><label className="text-[10px] font-bold text-slate-400 uppercase">Mando de Campo:</label><button type="button" onClick={()=>updateField('isHome', !data.isHome)} className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm ${data.isHome ? 'bg-blue-600 text-white' : 'bg-slate-100 border border-slate-200 text-slate-500'}`}>{data.isHome ? 'JOGA EM CASA' : 'JOGA FORA'}</button></div> 
+                            <div className="mt-6"><label className="text-[10px] font-bold text-slate-400 uppercase">Escudo (URL)</label><input className="w-full border-b-2 border-slate-100 text-xs font-bold outline-none text-blue-500 bg-transparent focus:border-blue-500 py-1" placeholder="https://..." value={data.logo||''} onChange={e=>updateField('logo',e.target.value)}/></div> 
+                        </div> 
+                        <div className="space-y-4"> 
+                            {diagnosis.title && (
+                                <div className="bg-white p-5 rounded-xl shadow-sm border border-l-4 border-l-blue-500 relative overflow-hidden">
+                                    <div className="absolute -right-4 -top-4 opacity-5"><Icon name="bulb" size={100}/></div>
+                                    <div className="flex items-start gap-3 relative z-10">
+                                        <div className="text-blue-500 bg-blue-50 p-2 rounded-full shrink-0"><Icon name="bulb" size={20}/></div>
+                                        <div className="flex-1">
+                                            <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">DIAGNÓSTICO TÁTICO: {diagnosis.title}</div>
+                                            <div className="text-xs font-bold text-slate-700 mb-3">{diagnosis.text}</div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="bg-green-50 p-2.5 rounded-lg border border-green-100">
+                                                    <div className="text-[9px] font-black text-green-700 uppercase mb-1.5 flex items-center gap-1"><Icon name="check" size={12}/> Pontos Fortes</div>
+                                                    <ul className="list-disc pl-4 text-[10px] text-green-800 font-medium space-y-0.5">
+                                                        {(diagnosis.s || []).map((s,i)=><li key={i}>{s}</li>)}
+                                                    </ul>
+                                                </div>
+                                                <div className="bg-red-50 p-2.5 rounded-lg border border-red-100">
+                                                    <div className="text-[9px] font-black text-red-700 uppercase mb-1.5 flex items-center gap-1"><Icon name="alert" size={12}/> Pontos Fracos</div>
+                                                    <ul className="list-disc pl-4 text-[10px] text-red-800 font-medium space-y-0.5">
+                                                        {(diagnosis.w || []).map((w,i)=><li key={i}>{w}</li>)}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )} 
+                            {contextAnalysis && (
+                                <div className={`p-5 rounded-xl shadow-sm border border-l-4 flex items-start gap-3 ${contextAnalysis.status.includes('ALTA') ? 'bg-red-50 border-red-200 border-l-red-500' : 'bg-yellow-50 border-yellow-200 border-l-yellow-500'}`}>
+                                    <div className={`${contextAnalysis.status.includes('ALTA') ? 'text-red-500 bg-red-100' : 'text-yellow-600 bg-yellow-100'} p-2 rounded-full shrink-0`}><Icon name="alert" size={20}/></div>
+                                    <div>
+                                        <div className="text-[10px] font-black opacity-70 uppercase tracking-widest mb-1">MOMENTO DA EQUIPE</div>
+                                        <div className={`text-sm font-black uppercase mb-1 ${contextAnalysis.color}`}>{contextAnalysis.status}</div>
+                                        <div className="text-xs font-bold text-slate-700 italic">"{contextAnalysis.advice}"</div>
+                                    </div>
+                                </div>
+                            )} 
+                        </div> 
+                    </div> 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-4">
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                            <div className="text-xs font-black text-green-600 uppercase mb-3 flex items-center gap-2"><Icon name="plus" size={14}/> Pontos Fortes (Observados)</div>
+                            <div className="space-y-2">
+                                {[0,1,2].map(i=><input key={i} className="w-full border-b border-slate-100 text-xs py-1.5 outline-none bg-transparent focus:border-green-400 transition font-medium text-slate-700" placeholder={`Característica forte ${i+1}...`} value={data.strengths?.[i]||''} onChange={e=>updateList('strengths',i,e.target.value)}/>)}
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                            <div className="text-xs font-black text-red-600 uppercase mb-3 flex items-center gap-2"><Icon name="x" size={14}/> Pontos Fracos (Observados)</div>
+                            <div className="space-y-2">
+                                {[0,1,2].map(i=><input key={i} className="w-full border-b border-slate-100 text-xs py-1.5 outline-none bg-transparent focus:border-red-400 transition font-medium text-slate-700" placeholder={`Vulnerabilidade ${i+1}...`} value={data.weaknesses?.[i]||''} onChange={e=>updateList('weaknesses',i,e.target.value)}/>)}
+                            </div>
+                        </div>
+                    </div> 
+                    <div className="space-y-4">
+                        {['Organização Ofensiva', 'Organização Defensiva', 'Bolas Paradas'].map((label, i) => { 
+                            const field = i===0?'offensive':i===1?'defensive':'setPieces'; 
+                            return (
+                                <div key={field} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <label className="text-xs font-black text-slate-500 uppercase mb-2 block">{label}</label>
+                                    <textarea className="w-full h-24 text-xs p-3 border border-slate-100 bg-slate-50 rounded-lg mt-1 resize-none outline-none focus:border-blue-400 transition font-medium text-slate-700" placeholder={`Análise de ${label.toLowerCase()}...`} value={data[field]||''} onChange={e=>updateField(field,e.target.value)}></textarea>
+                                </div>
+                            ); 
+                        })}
+                    </div> 
+                </div> 
+            ); 
+        };
 
         const PostMatchView = ({ themeColor, matchData, setMatchData, players, setPlayers, matchHistory, setMatchHistory, teamLogo }) => { 
             const [toast, setToast] = useState(null); 
@@ -793,8 +951,9 @@
             const saveMatch = () => { 
                 if(!matchData.opponent) return alert("Digite o adversário"); 
                 const r = { ...matchData, id: matchData.id || Date.now() }; 
-                const idx = matchHistory.findIndex(x => x.id === r.id); 
-                const h = [...matchHistory]; 
+                const historyArr = Array.isArray(matchHistory) ? matchHistory : [];
+                const idx = historyArr.findIndex(x => x.id === r.id); 
+                const h = [...historyArr]; 
                 if(idx >= 0) h[idx] = r; else h.push(r); 
                 setMatchHistory(h); 
                 setMatchData(r); 
@@ -805,10 +964,17 @@
                 setTimeout(()=>setToast(null), 3000); 
             }; 
 
+            const loadMatch = (h) => {
+                setMatchData(h);
+                setShowLoad(false);
+            };
+
+            const safeHistory = Array.isArray(matchHistory) ? matchHistory : [];
+
             return ( 
                 <div className="p-4 h-full overflow-y-auto flex flex-col md:flex-row gap-4 animate-fade-in relative"> 
                     {toast && <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl z-50 toast-enter flex items-center gap-2"><Icon name="check"/> {toast}</div>} 
-                    {showLoad && <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setShowLoad(false)}><div className="bg-white rounded-xl w-full max-w-sm p-4" onClick={e=>e.stopPropagation()}><h3 className="font-bold mb-4">Jogos Salvos</h3><div className="space-y-2">{matchHistory.map(h=><div key={h.id} className="flex justify-between border p-2 rounded"><span className="font-bold">{h.opponent} ({h.date})</span><button type="button" onClick={()=>{setMatchData(h); setShowLoad(false)}} className="text-blue-500">Abrir</button></div>)}</div></div></div>} 
+                    {showLoad && <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setShowLoad(false)}><div className="bg-white rounded-xl w-full max-w-sm p-4" onClick={e=>e.stopPropagation()}><h3 className="font-bold mb-4">Jogos Salvos</h3><div className="space-y-2">{safeHistory.map(h=><div key={h.id} className="flex justify-between border p-2 rounded"><span className="font-bold">{h.opponent} ({h.date})</span><button type="button" onClick={()=>loadMatch(h)} className="text-blue-500">Abrir</button></div>)}</div></div></div>} 
                     
                     <div className="flex-1 space-y-4"> 
                         <div className="flex justify-between mb-2 no-print">
@@ -826,7 +992,7 @@
                         
                         <div className="bg-white p-4 rounded-xl shadow-sm border">
                             <div className="text-xs font-bold text-slate-400 uppercase mb-2">Escalar 11 Iniciais (Clique)</div>
-                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">{players.map((p, i) => (<div key={i} onClick={()=>toggleStarter(i)} className={`cursor-pointer border rounded-full px-2 py-1 text-[10px] font-bold flex items-center gap-1 ${matchData.starters?.includes(i) ? 'bg-green-500 text-white border-green-600' : 'bg-slate-50 text-slate-500'}`}>{p.image ? <img src={p.image} className="w-4 h-4 rounded-full object-cover"/> : <div className="w-4 h-4 bg-slate-300 rounded-full"></div>}{p.name}</div>))}</div>
+                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">{players.map((p, i) => (<div key={i} onClick={()=>toggleStarter(i)} className={`cursor-pointer border rounded-full px-2 py-1 text-[10px] font-bold flex items-center gap-1 ${matchData.starters?.includes(i) ? 'bg-green-500 text-white border-green-600' : 'bg-slate-50 text-slate-500'}`}>{p.name}</div>))}</div>
                         </div> 
                         
                         <div className="bg-white p-4 rounded-xl shadow-sm border">
@@ -863,7 +1029,7 @@
         const MicrocycleView = ({ micro, setMicro, themeColor, calendar }) => { 
             const weekDays = ['SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO', 'DOMINGO']; 
             const [activeSelection, setActiveSelection] = useState(null); 
-            const [aiTip, setAiTip] = useState(null); // Estado da Dica IA
+            const [aiTip, setAiTip] = useState(null); 
 
             const updateDay = (day, f, v) => { const n = {...micro}; if(!n[day]) n[day]={blocks:[], mdTag: '-'}; n[day][f]=v; setMicro(n); }; 
             const addBlock = (tag) => { const { day, period } = activeSelection; const n = {...micro}; if(!n[day]) n[day]={blocks:[], mdTag: '-'}; n[day].blocks.push({...tag, period}); setMicro(n); setActiveSelection(null); }; 
@@ -885,7 +1051,6 @@
 
             return ( 
                 <div className="p-4 bg-slate-50 h-full overflow-x-auto relative animate-fade-in">
-                    {/* MODAL DA DICA DA IA */}
                     {aiTip && (
                         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 no-print" onClick={()=>setAiTip(null)}>
                             <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl relative" onClick={e=>e.stopPropagation()}>
@@ -912,7 +1077,6 @@
                                             <select className="text-[9px] flex-1 text-center bg-black/20 text-white font-bold border-none outline-none rounded p-0.5 cursor-pointer" value={d.mdTag || '-'} onChange={e=>updateDay(day, 'mdTag', e.target.value)}>
                                                 {MD_OPTIONS.map(o => <option key={o} value={o} className="text-slate-800 bg-white">{o}</option>)}
                                             </select>
-                                            {/* BOTÃO DA IA */}
                                             <button type="button" onClick={()=>handleAiTip(d.mdTag)} className="bg-blue-500 hover:bg-blue-400 px-1 rounded flex items-center justify-center" title="Dica IA"><Icon name="bot" size={14}/></button>
                                         </div>
                                     </div> 
@@ -1019,7 +1183,6 @@
             return (
                 <div className="flex flex-col md:flex-row h-full bg-slate-50 overflow-hidden text-slate-800 animate-fade-in relative">
                     
-                    {/* MODAL DE IMPORTAR DA BIBLIOTECA */}
                     {showLibModal && (
                         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 no-print" onClick={()=>setShowLibModal(false)}>
                             <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl p-4" onClick={e=>e.stopPropagation()}>
@@ -1028,7 +1191,7 @@
                                     <button type="button" onClick={()=>setShowLibModal(false)}><Icon name="x"/></button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {libraryDrills.map(item => (
+                                    {(libraryDrills||[]).map(item => (
                                         <div key={item.libId} onClick={()=>importFromLib(item)} className="border rounded-xl p-3 flex gap-3 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
                                             <div className="w-20 h-20 bg-slate-200 rounded-lg shrink-0 flex items-center justify-center overflow-hidden">{item.image ? <img src={item.image} className="w-full h-full object-cover"/> : <Icon name="image" className="opacity-40"/>}</div>
                                             <div><div className="font-bold text-sm text-slate-800">{item.name}</div><div className="text-[10px] text-slate-500 line-clamp-2 mt-1">{item.desc}</div><button type="button" className="mt-2 bg-slate-800 text-white text-[9px] font-bold px-3 py-1 rounded">USAR HOJE</button></div>
@@ -1057,10 +1220,10 @@
                                         <div className="w-1/2 p-3 flex flex-col gap-2">
                                             <textarea className="flex-1 w-full bg-slate-50 border rounded p-2 text-xs resize-none outline-none" value={drill.desc} onChange={e=>updateDrill(idx,'desc',e.target.value)} placeholder="Descrição..."/>
                                             <textarea className="flex-1 w-full bg-slate-50 border rounded p-2 text-xs resize-none outline-none" value={drill.variants} onChange={e=>updateDrill(idx,'variants',e.target.value)} placeholder="Variações / Coaching Points..."/>
-                                            <div className="flex items-center gap-2 bg-slate-100 p-2 rounded-lg border border-slate-200 no-print">
+                                            <div className="flex items-center gap-2 mt-1 bg-slate-100 p-2 rounded-lg border border-slate-200 no-print">
                                                 <Icon name="link" size={16} className="text-red-500" />
                                                 <input className="flex-1 bg-transparent outline-none text-xs font-bold text-slate-700" placeholder="Link do Vídeo..." value={drill.linkUrl || ''} onChange={e=>updateDrill(idx,'linkUrl',e.target.value)} />
-                                                {drill.linkUrl && <a href={drill.linkUrl.startsWith('http') ? drill.linkUrl : `https://${drill.linkUrl}`} target="_blank" className="bg-red-500 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow hover:bg-red-600 transition">VER</a>}
+                                                {(drill.linkUrl||'').length > 0 && <a href={(drill.linkUrl||'').startsWith('http') ? drill.linkUrl : `https://${drill.linkUrl}`} target="_blank" className="bg-red-500 text-white text-[10px] font-bold px-3 py-1.5 rounded shadow hover:bg-red-600 transition">VER</a>}
                                             </div>
                                         </div>
                                     </div>
@@ -1086,11 +1249,11 @@
             const handleAdd = (item) => { onAddToSession(item); setToast(`Adicionado à Sessão!`); setTimeout(() => setToast(null), 2000); }; 
             const handleBoardClick = (item) => { setShowDaySelector(item); }; 
             const confirmBoardAdd = (day) => { if(showDaySelector && showDaySelector.image) { onAddToBoard(day, showDaySelector.image); setShowDaySelector(null); setToast(`Adicionado ao Board de ${day}!`); setTimeout(() => setToast(null), 2000); } else { alert("Este exercício não tem imagem."); setShowDaySelector(null); } }; 
-            const handleImageUrl = (id) => { const url = prompt("Link da imagem:"); if(url) { const n=libraryDrills.map(i=>i.libId===id?{...i,image:url}:i);setLibraryDrills(n); } }; 
-            const addNew = () => setLibraryDrills([...libraryDrills, { libId: Date.now(), name: 'Novo Exercício', method: 'Treino Tático', dim: '-', time: '10', desc: '', variants: '', image: null, linkUrl: '' }]); 
-            const updateLib = (id, f, v) => setLibraryDrills(libraryDrills.map(i=>i.libId===id?{...i,[f]:v}:i)); 
-            const deleteLib = (id) => { if(window.confirm('Apagar exercício?')) setLibraryDrills(libraryDrills.filter(i=>i.libId!==id)); }; 
-            return ( <div className="p-6 bg-slate-100 h-full overflow-y-auto relative"> {toast && <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl toast-enter z-50 flex items-center gap-2 no-print"><Icon name="check"/> {toast}</div>} {showDaySelector && ( <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={()=>setShowDaySelector(null)}> <div className="bg-white rounded-xl p-4 w-72 shadow-2xl animate-fade-in" onClick={e=>e.stopPropagation()}> <h3 className="font-bold text-center mb-4 text-slate-700 text-xs uppercase">Adicionar ao Board</h3> <div className="grid grid-cols-2 gap-2"> {['SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO','DOMINGO'].map(day => ( <button type="button" key={day} onClick={()=>confirmBoardAdd(day)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded text-[10px] border border-slate-200">{day}</button> ))} </div> <button type="button" onClick={()=>setShowDaySelector(null)} className="mt-4 w-full text-xs text-red-400 font-bold">Cancelar</button> </div> </div> )} <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4 no-print"><h2 className="text-2xl font-bold flex items-center gap-2" style={{color: themeColor}}><Icon name="book" size={24}/> Biblioteca</h2><button type="button" onClick={addNew} className="text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg hover:opacity-90 transition flex items-center gap-2" style={{backgroundColor: themeColor}}><Icon name="plus" size={16}/> NOVO</button></div> <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{libraryDrills.map((item) => (<div key={item.libId} className="print-card bg-white rounded-xl shadow border border-slate-200 overflow-hidden group hover:shadow-xl transition-all duration-300"><div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50"><input className="font-bold text-slate-800 text-sm bg-transparent outline-none w-2/3" value={item.name} onChange={(e)=>updateLib(item.libId, 'name', e.target.value)} /><button type="button" onClick={()=>deleteLib(item.libId)} className="text-slate-300 hover:text-red-500 no-print"><Icon name="trash" size={14}/></button></div><div className="h-48 bg-slate-100 relative group/img border-b border-slate-100 flex items-center justify-center cursor-pointer"> {item.image ? <img src={item.image} onError={(e)=>{e.target.src='https://placehold.co/400x300?text=Sem+Imagem';}} className="w-full h-full object-cover" /> : <div className="text-slate-400 flex flex-col items-center"><Icon name="image" size={32}/><span className="text-xs">Sem Imagem</span></div>} <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity no-print"> <button type="button" onClick={() => handleBoardClick(item)} className="bg-white text-slate-800 px-4 py-1.5 rounded-full font-bold text-[10px] hover:bg-blue-100 flex items-center gap-1 shadow">+ BOARD</button> </div> <button type="button" className="absolute top-2 right-2 bg-white p-2 rounded-full shadow cursor-pointer hover:bg-blue-50 z-10 no-print" title="Link da Imagem" onClick={(e)=>{e.stopPropagation(); handleImageUrl(item.libId);}}><Icon name="link" size={16} color={themeColor} /></button> </div><div className="p-3 bg-white flex flex-col gap-2"><textarea className="text-xs text-slate-500 w-full h-10 resize-none outline-none bg-transparent border-b border-slate-100" value={item.desc} onChange={(e)=>updateLib(item.libId, 'desc', e.target.value)} placeholder="Descrição rápida..."/><div className="flex items-center gap-2 mt-1 bg-slate-50 p-2 rounded border border-slate-100 no-print"><Icon name="link" size={16} className="text-red-500"/><input className="text-xs w-full bg-transparent outline-none font-bold" placeholder="Link (YouTube, Video)..." value={item.linkUrl || ''} onChange={(e)=>updateLib(item.libId, 'linkUrl', e.target.value)} />{(item.linkUrl||'').length > 0 && <a href={(item.linkUrl||'').startsWith('http') ? item.linkUrl : `https://${item.linkUrl}`} target="_blank" className="text-[10px] bg-red-500 text-white px-2 py-1 rounded font-bold hover:bg-red-600 shadow-sm">VER</a>}</div></div></div>))}</div> </div> ); 
+            const handleImageUrl = (id) => { const url = prompt("Link da imagem:"); if(url) { const n=(libraryDrills||[]).map(i=>i.libId===id?{...i,image:url}:i);setLibraryDrills(n); } }; 
+            const addNew = () => setLibraryDrills([...(libraryDrills||[]), { libId: Date.now(), name: 'Novo Exercício', method: 'Treino Tático', dim: '-', time: '10', desc: '', variants: '', image: null, linkUrl: '' }]); 
+            const updateLib = (id, f, v) => setLibraryDrills((libraryDrills||[]).map(i=>i.libId===id?{...i,[f]:v}:i)); 
+            const deleteLib = (id) => { if(window.confirm('Apagar exercício?')) setLibraryDrills((libraryDrills||[]).filter(i=>i.libId!==id)); }; 
+            return ( <div className="p-6 bg-slate-100 h-full overflow-y-auto relative"> {toast && <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl toast-enter z-50 flex items-center gap-2 no-print"><Icon name="check"/> {toast}</div>} {showDaySelector && ( <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={()=>setShowDaySelector(null)}> <div className="bg-white rounded-xl p-4 w-72 shadow-2xl animate-fade-in" onClick={e=>e.stopPropagation()}> <h3 className="font-bold text-center mb-4 text-slate-700 text-xs uppercase">Adicionar ao Board</h3> <div className="grid grid-cols-2 gap-2"> {['SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO','DOMINGO'].map(day => ( <button type="button" key={day} onClick={()=>confirmBoardAdd(day)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded text-[10px] border border-slate-200">{day}</button> ))} </div> <button type="button" onClick={()=>setShowDaySelector(null)} className="mt-4 w-full text-xs text-red-400 font-bold">Cancelar</button> </div> </div> )} <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4 no-print"><h2 className="text-2xl font-bold flex items-center gap-2" style={{color: themeColor}}><Icon name="book" size={24}/> Biblioteca</h2><button type="button" onClick={addNew} className="text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg hover:opacity-90 transition flex items-center gap-2" style={{backgroundColor: themeColor}}><Icon name="plus" size={16}/> NOVO</button></div> <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">{(libraryDrills||[]).map((item) => (<div key={item.libId} className="print-card bg-white rounded-xl shadow border border-slate-200 overflow-hidden group hover:shadow-xl transition-all duration-300"><div className="p-3 border-b border-slate-100 flex justify-between items-center bg-slate-50"><input className="font-bold text-slate-800 text-sm bg-transparent outline-none w-2/3" value={item.name} onChange={(e)=>updateLib(item.libId, 'name', e.target.value)} /><button type="button" onClick={()=>deleteLib(item.libId)} className="text-slate-300 hover:text-red-500 no-print"><Icon name="trash" size={14}/></button></div><div className="h-48 bg-slate-100 relative group/img border-b border-slate-100 flex items-center justify-center cursor-pointer"> {item.image ? <img src={item.image} onError={(e)=>{e.target.src='https://placehold.co/400x300?text=Sem+Imagem';}} className="w-full h-full object-cover" /> : <div className="text-slate-400 flex flex-col items-center"><Icon name="image" size={32}/><span className="text-xs">Sem Imagem</span></div>} <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity no-print"> <button type="button" onClick={() => handleAdd(item)} className="bg-white text-slate-800 px-4 py-1.5 rounded-full font-bold text-[10px] hover:bg-green-100 flex items-center gap-1 shadow">+ SESSÃO</button> <button type="button" onClick={() => handleBoardClick(item)} className="bg-white text-slate-800 px-4 py-1.5 rounded-full font-bold text-[10px] hover:bg-blue-100 flex items-center gap-1 shadow">+ BOARD</button> </div> <button type="button" className="absolute top-2 right-2 bg-white p-2 rounded-full shadow cursor-pointer hover:bg-blue-50 z-10 no-print" title="Link da Imagem" onClick={(e)=>{e.stopPropagation(); handleImageUrl(item.libId);}}><Icon name="link" size={16} color={themeColor} /></button> </div><div className="p-3 bg-white flex flex-col gap-2"><textarea className="text-xs text-slate-500 w-full h-10 resize-none outline-none bg-transparent border-b border-slate-100" value={item.desc} onChange={(e)=>updateLib(item.libId, 'desc', e.target.value)} placeholder="Descrição rápida..."/><div className="flex items-center gap-2 mt-1 bg-slate-50 p-2 rounded border border-slate-100 no-print"><Icon name="link" size={16} className="text-red-500"/><input className="text-xs w-full bg-transparent outline-none font-bold" placeholder="Link (YouTube, Video)..." value={item.linkUrl || ''} onChange={(e)=>updateLib(item.libId, 'linkUrl', e.target.value)} />{(item.linkUrl||'').length > 0 && <a href={(item.linkUrl||'').startsWith('http') ? item.linkUrl : `https://${item.linkUrl}`} target="_blank" className="text-[10px] bg-red-500 text-white px-2 py-1 rounded font-bold hover:bg-red-600 shadow-sm">VER</a>}</div></div></div>))}</div> </div> ); 
         };
 
         // --- APP PRINCIPAL E ROTEAMENTO ---
@@ -1209,28 +1372,4 @@
                         <button type="button" onClick={()=>setTab('micro')} className={`flex-1 px-3 py-2 rounded text-xs font-bold transition-all shrink-0 ${tab==='micro'?'text-white shadow':'text-slate-400 hover:text-slate-600'}`} style={tab==='micro'?{backgroundColor: themeColor}:{}}><Icon name="grid"/> MICRO</button>
                         <button type="button" onClick={()=>setTab('board')} className={`flex-1 px-3 py-2 rounded text-xs font-bold transition-all shrink-0 ${tab==='board'?'text-white shadow':'text-slate-400 hover:text-slate-600'}`} style={tab==='board'?{backgroundColor: themeColor}:{}}><Icon name="image"/> BOARD</button> 
                         <button type="button" onClick={()=>setTab('calendar')} className={`flex-1 px-3 py-2 rounded text-xs font-bold transition-all shrink-0 ${tab==='calendar'?'text-white shadow':'text-slate-400 hover:text-slate-600'}`} style={tab==='calendar'?{backgroundColor: themeColor}:{}}><Icon name="calendar"/> CALEND</button>
-                        <button type="button" onClick={()=>setTab('library')} className={`flex-1 px-3 py-2 rounded text-xs font-bold transition-all shrink-0 ${tab==='library'?'text-white shadow':'text-slate-400 hover:text-slate-600'}`} style={tab==='library'?{backgroundColor: themeColor}:{}}><Icon name="book"/> BIBLIOTECA</button>
-                    </div>
-
-                    <div className="flex-1 overflow-hidden relative">
-                        {tab === 'dashboard' && <DashboardView themeColor={themeColor} players={players} matchHistory={matchHistory} setTab={setTab} teamLogo={teamLogo} scoutingData={scoutingData} microData={microData} calendarData={calendarData} header={header} seasonStats={seasonStats} openStats={()=>setShowStatsModal(true)} notices={notices} setNotices={setNotices} />}
-                        {tab === 'squad' && <SquadView players={players} setPlayers={setPlayers} themeColor={themeColor} history={sessionHistory} />}
-                        {tab === 'lineup' && <SmartLineupView players={players} history={sessionHistory} themeColor={themeColor} />}
-                        {tab === 'performance' && <PerformanceView players={players} history={sessionHistory} themeColor={themeColor} />}
-                        {tab === 'scouting' && <ScoutingView themeColor={themeColor} scoutingData={scoutingData} setScoutingData={setScoutingData} scoutingHistory={scoutingHistory} setScoutingHistory={setScoutingHistory} />}
-                        {tab === 'session' && <SessionView drills={sessionDrills} setDrills={setSessionDrills} header={header} setHeader={setHeader} logo={teamLogo} themeColor={themeColor} players={players} history={sessionHistory} setHistory={setSessionHistory} sessionDate={sessionDate} setSessionDate={setSessionDate} teamName={teamName} libraryDrills={libraryDrills} />}
-                        {tab === 'postmatch' && <PostMatchView themeColor={themeColor} matchData={matchData} setMatchData={setMatchData} players={players} setPlayers={setPlayers} matchHistory={matchHistory} setMatchHistory={setMatchHistory} teamLogo={teamLogo} />}
-                        {tab === 'micro' && <MicrocycleView micro={microData} setMicro={setMicroData} themeColor={themeColor} calendar={calendarData} />}
-                        {tab === 'board' && <VisualBoardView currentWeekStart={getMonday(boardWeekDate)} changeWeek={(d)=>{const n=new Date(boardWeekDate); n.setDate(n.getDate()+d); setBoardWeekDate(n);}} boardData={boardHistory[`${boardWeekDate.getFullYear()}-W${Math.ceil((((boardWeekDate - new Date(boardWeekDate.getFullYear(), 0, 1)) / 86400000) + 1) / 7)}`] || {}} updateBoardData={(day, images, mdTag)=>{const key=`${boardWeekDate.getFullYear()}-W${Math.ceil((((boardWeekDate - new Date(boardWeekDate.getFullYear(), 0, 1)) / 86400000) + 1) / 7)}`; setBoardHistory({...boardHistory, [key]: {...(boardHistory[key]||{}), [day]: {images, mdTag}}});}} themeColor={themeColor} />}
-                        {tab === 'calendar' && <CalendarView calendar={calendarData} setCalendar={setCalendarData} themeColor={themeColor} notices={notices} />}
-                        {tab === 'library' && <LibraryView libraryDrills={libraryDrills} setLibraryDrills={setLibraryDrills} onAddToSession={()=>{}} onAddToBoard={()=>{}} themeColor={themeColor} />}
-                    </div>
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<MainApp />);
-    </script>
-</body>
-</html>
+                        <button type="button" onClick={()=>setTab('library')} className={`flex-1 px-3 py-2 rounded text-xs font-bold transition-all shrink-0 ${tab==='library'?'text-white shadow':'text-slate-400 hover:text-slate-
